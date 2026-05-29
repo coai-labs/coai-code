@@ -9,6 +9,8 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-29
+
 ### Added
 
 - Release workflow（`.github/workflows/release.yml`）— tag 推送（`v*`）自动触发，交叉编译并上传 Linux x86_64/aarch64、macOS x86_64/aarch64 及 Windows x86_64 预编译二进制。
@@ -29,5 +31,6 @@
 - **安全特性** — 文件与 exec tool 的路径限制、交互模式下的确认提示，以及 headless 模式的自主权边界（远程 git 操作需设置 `COAI_AUTONOMOUS=1`）。
 - **`coai doctor` 子命令** — 一键验证环境、当前 provider、模型及 API key 是否配置正确。
 
-[Unreleased]: https://github.com/coai-labs/coai-code/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/coai-labs/coai-code/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/coai-labs/coai-code/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/coai-labs/coai-code/releases/tag/v0.1.0

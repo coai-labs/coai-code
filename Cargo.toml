@@ -2,7 +2,7 @@
 
 [package]
 name = "coai-code"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["CoAI Team <chonebz@gmail.com>"]
 description = "A terminal AI coding agent optimized for DeepSeek, also supporting OpenAI, Anthropic, and Ollama."

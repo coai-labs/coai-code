@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-29
+
 ### Added
 
 - Release workflow (`.github/workflows/release.yml`) — triggers on tag push (`v*`), cross-compiles and uploads binaries for Linux x86_64/aarch64, macOS x86_64/aarch64, and Windows x86_64.
@@ -29,5 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Safety features** — path containment for file and exec tools, confirmation prompts in interactive mode, and bounded autonomy in headless mode (remote git ops require `COAI_AUTONOMOUS=1`).
 - **`coai doctor` subcommand** — verifies environment, active provider, model, and API key at a glance.
 
-[Unreleased]: https://github.com/coai-labs/coai-code/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/coai-labs/coai-code/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/coai-labs/coai-code/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/coai-labs/coai-code/releases/tag/v0.1.0

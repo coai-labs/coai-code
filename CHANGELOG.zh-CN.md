@@ -9,6 +9,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- Release workflow（`.github/workflows/release.yml`）— tag 推送（`v*`）自动触发，交叉编译并上传 Linux x86_64/aarch64、macOS x86_64/aarch64 及 Windows x86_64 预编译二进制。
+- 安装脚本（`install.sh`）— Linux/macOS 一键安装；自动检测平台，拉取最新 Release，安装到 `~/.local/bin`。
+
 ## [0.1.0] - 2026-05-29
 
 ### Added

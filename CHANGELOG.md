@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Release workflow (`.github/workflows/release.yml`) — triggers on tag push (`v*`), cross-compiles and uploads binaries for Linux x86_64/aarch64, macOS x86_64/aarch64, and Windows x86_64.
+- Installation script (`install.sh`) for one-line install on Linux/macOS; auto-detects platform, fetches the latest release, and installs to `~/.local/bin`.
+
 ## [0.1.0] - 2026-05-29
 
 ### Added

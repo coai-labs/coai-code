@@ -18,6 +18,17 @@
 
 ## 安装
 
+### 一键安装（Linux / macOS）
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/coai-labs/coai-code/main/install.sh | sh
+```
+
+自动检测平台并下载最新 Release 二进制，安装到 `~/.local/bin/coai`。
+Windows 用户请前往 [Release 页面](https://github.com/coai-labs/coai-code/releases) 下载预编译包。
+
+### 从源码构建
+
 从源码构建（需要较新的稳定版 Rust 工具链）：
 
 ```bash

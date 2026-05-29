@@ -27,6 +27,17 @@ Anthropic/Claude, Ollama).
 
 ## Install
 
+### Quick install (Linux / macOS)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/coai-labs/coai-code/main/install.sh | sh
+```
+
+This downloads the latest release binary for your platform and installs to `~/.local/bin/coai`.
+For Windows, see [Release page](https://github.com/coai-labs/coai-code/releases) for prebuilt binaries.
+
+### From source
+
 From source (requires a recent stable Rust toolchain):
 
 ```bash

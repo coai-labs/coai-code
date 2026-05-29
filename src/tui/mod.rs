@@ -584,7 +584,7 @@ async fn run_event_loop(
                             }
                             _ => None,
                         };
-                        let choice = numeric_choice.or_else(|| match key_event.code {
+                        let choice = numeric_choice.or(match key_event.code {
                             KeyCode::Char('y') | KeyCode::Char('Y') => {
                                 Some(PermissionChoice::AllowOnce)
                             }
@@ -1075,7 +1075,10 @@ fn maybe_print_long_wait_notice(term: &mut Terminal, state: &mut AppState) -> Re
     let (level, base_message) = if elapsed >= 180 {
         (3, "Still reasoning, no tool calls made. Press Esc to interrupt and break the task into smaller pieces.")
     } else if elapsed >= 90 {
-        (2, "Still reasoning, no tool calls made. Press Esc to interrupt.")
+        (
+            2,
+            "Still reasoning, no tool calls made. Press Esc to interrupt.",
+        )
     } else if elapsed >= 30 {
         (1, "Reasoning in progress, no tool calls made.")
     } else {
@@ -1345,6 +1348,7 @@ fn markdown_table_cell_count(line: &str) -> usize {
 // ─── Task dispatch ───────────────────────────────────────
 
 /// Main conversation dispatches a task via direct tool loop.
+#[allow(clippy::too_many_arguments)]
 fn dispatch_task(
     text: &str,
     config: &LLMConfig,
@@ -1409,6 +1413,7 @@ fn dispatch_task(
 
 // ─── Task execution (single context, tool loop to completion) ──
 
+#[allow(clippy::too_many_arguments)]
 async fn execute_direct_task(
     description: String,
     prior_messages: Vec<Message>,
@@ -1513,6 +1518,7 @@ async fn execute_direct_task(
 
     let mut context_retry_done = false;
     let mut transient_retries = 0usize;
+    #[allow(clippy::while_let_loop)]
     loop {
         let Err((e, failed_messages)) = &result else {
             break;
@@ -1829,10 +1835,13 @@ fn format_count(value: usize) -> String {
     }
 }
 
+type TurnResult =
+    std::result::Result<(String, Vec<Message>), (crate::core::CoAIError, Vec<Message>)>;
+
 fn conversation_after_turn(
     request_messages: &[Message],
     description: &str,
-    result: &std::result::Result<(String, Vec<Message>), (crate::core::CoAIError, Vec<Message>)>,
+    result: &TurnResult,
 ) -> Vec<Message> {
     if let Ok((_, messages)) = result {
         return sanitize_conversation_messages(messages);
@@ -2183,7 +2192,7 @@ fn record_low_level_activity(state: &mut AppState, content: &str) -> Option<Stri
         return Some(line);
     }
 
-    if count % 10 == 0 {
+    if count.is_multiple_of(10) {
         return Some(format!(
             "… {count} tool steps executed [#{}] (ctrl+o to expand full trace)",
             state.tool_activity_output_id.unwrap_or(0)
@@ -2246,13 +2255,16 @@ fn first_user_message(messages: &[Message]) -> String {
         .unwrap_or_else(|| "New session".to_string())
 }
 
+#[allow(dead_code)]
 fn task_description_with_history(description: &str, prior_messages: &[Message]) -> String {
     if prior_messages.is_empty() {
         return description.to_string();
     }
 
     let mut lines = Vec::new();
-    lines.push("Prior conversation context (for reference; do not repeat completed work):".to_string());
+    lines.push(
+        "Prior conversation context (for reference; do not repeat completed work):".to_string(),
+    );
     for message in prior_messages.iter().rev().take(8).rev() {
         let role = match message.role {
             Role::User => "User",
@@ -2338,16 +2350,17 @@ fn format_tool_references(tools: Vec<crate::tools::ToolInfo>) -> String {
 
 // ─── Slash commands ──────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)]
 async fn handle_slash_command(
     input: &str,
     state: &mut AppState,
     store: &SessionStore,
     term: &mut Terminal,
-    config: Option<&LLMConfig>,
-    event_tx: &tokio::sync::mpsc::UnboundedSender<UiEvent>,
-    permit_tx: &PermitChan,
+    _config: Option<&LLMConfig>,
+    _event_tx: &tokio::sync::mpsc::UnboundedSender<UiEvent>,
+    _permit_tx: &PermitChan,
     approved: Arc<Mutex<HashSet<String>>>,
-    require_read_approval: bool,
+    _require_read_approval: bool,
 ) {
     let cmd = input.trim();
     let msg = match cmd {
@@ -2386,7 +2399,10 @@ Shortcuts: Enter send | Alt+Enter newline | Ctrl+W delete word | Esc clear"
         ),
         "/compact" => {
             if state.conversation_messages.len() <= 2 {
-                (MessageRole::System, "Current session does not need compaction yet".into())
+                (
+                    MessageRole::System,
+                    "Current session does not need compaction yet".into(),
+                )
             } else {
                 let caps = crate::llm::model_caps::get_model_capabilities(&state.model_name);
                 let mut messages = vec![Message::system("manual compact")];
@@ -2414,7 +2430,10 @@ Shortcuts: Enter send | Alt+Enter newline | Ctrl+W delete word | Esc clear"
                         ),
                     )
                 } else {
-                    (MessageRole::System, "Current session does not need compaction yet".into())
+                    (
+                        MessageRole::System,
+                        "Current session does not need compaction yet".into(),
+                    )
                 }
             }
         }
@@ -2541,7 +2560,9 @@ Shortcuts: Enter send | Alt+Enter newline | Ctrl+W delete word | Esc clear"
             let result = if let Some(line) = args.strip_prefix("--line ") {
                 match line.trim().parse::<usize>() {
                     Ok(line) => memory.delete_line(line).await,
-                    Err(_) => Err(crate::core::CoAIError::Other("--line must be a number".into())),
+                    Err(_) => Err(crate::core::CoAIError::Other(
+                        "--line must be a number".into(),
+                    )),
                 }
             } else if let Some(section) = args.strip_prefix("--section ") {
                 memory.delete_section(section.trim()).await
@@ -2589,7 +2610,10 @@ Shortcuts: Enter send | Alt+Enter newline | Ctrl+W delete word | Esc clear"
                 .unwrap_or("")
                 .trim();
             if name.is_empty() {
-                (MessageRole::Error, "Usage: /skills read <name or path>".into())
+                (
+                    MessageRole::Error,
+                    "Usage: /skills read <name or path>".into(),
+                )
             } else {
                 let skills =
                     crate::tools::SkillTools::new(std::env::current_dir().unwrap_or_default());
@@ -2671,7 +2695,8 @@ Shortcuts: Enter send | Alt+Enter newline | Ctrl+W delete word | Esc clear"
                         ));
                     }
                     lines.push(
-                        "Use /runs show <id> to view the timeline, /runs raw <id> for raw JSONL".into(),
+                        "Use /runs show <id> to view the timeline, /runs raw <id> for raw JSONL"
+                            .into(),
                     );
                     (MessageRole::System, lines.join("\n"))
                 }
@@ -2705,7 +2730,10 @@ Shortcuts: Enter send | Alt+Enter newline | Ctrl+W delete word | Esc clear"
                     let _ = redraw_screen(term, state);
                     return;
                 }
-                Some(id) => (MessageRole::Error, format!("Collapsed output block not found: #{id}")),
+                Some(id) => (
+                    MessageRole::Error,
+                    format!("Collapsed output block not found: #{id}"),
+                ),
                 None => (MessageRole::Error, "Usage: /expand <id>".into()),
             }
         }
@@ -2718,7 +2746,10 @@ Shortcuts: Enter send | Alt+Enter newline | Ctrl+W delete word | Esc clear"
         }
         "/outputs" => {
             if state.collapsed_outputs.is_empty() {
-                (MessageRole::System, "No collapsible outputs to expand".into())
+                (
+                    MessageRole::System,
+                    "No collapsible outputs to expand".into(),
+                )
             } else {
                 let mut lines = vec!["Expandable outputs:".to_string()];
                 for output in state.collapsed_outputs.iter().rev() {
@@ -2748,7 +2779,10 @@ Shortcuts: Enter send | Alt+Enter newline | Ctrl+W delete word | Esc clear"
                 })
                 .collect::<Vec<_>>();
             if matches.is_empty() {
-                (MessageRole::System, format!("No matching outputs found: {}", query))
+                (
+                    MessageRole::System,
+                    format!("No matching outputs found: {}", query),
+                )
             } else {
                 let mut lines = vec![format!("{} matching output(s):", matches.len())];
                 for output in matches {
@@ -2774,7 +2808,10 @@ Shortcuts: Enter send | Alt+Enter newline | Ctrl+W delete word | Esc clear"
                 .filter(|output| output.title.to_lowercase().contains(&tool))
                 .collect::<Vec<_>>();
             if matches.is_empty() {
-                (MessageRole::System, format!("No tool output found for: {}", tool))
+                (
+                    MessageRole::System,
+                    format!("No tool output found for: {}", tool),
+                )
             } else {
                 let mut lines = vec![format!("Output(s) for {}:", tool)];
                 for output in matches {
@@ -2805,10 +2842,16 @@ Shortcuts: Enter send | Alt+Enter newline | Ctrl+W delete word | Esc clear"
                             Err(e) => (MessageRole::Error, e.to_string()),
                         }
                     } else {
-                        (MessageRole::Error, format!("Collapsed output block not found: #{id}"))
+                        (
+                            MessageRole::Error,
+                            format!("Collapsed output block not found: #{id}"),
+                        )
                     }
                 }
-                _ => (MessageRole::Error, "Usage: /outputs save <id> <path>".into()),
+                _ => (
+                    MessageRole::Error,
+                    "Usage: /outputs save <id> <path>".into(),
+                ),
             }
         }
         "/sessions" | "/s" => {
@@ -2862,7 +2905,10 @@ Shortcuts: Enter send | Alt+Enter newline | Ctrl+W delete word | Esc clear"
         }
         _ => (
             MessageRole::Error,
-            format!("Unknown command: {}. Type /help for available commands", cmd),
+            format!(
+                "Unknown command: {}. Type /help for available commands",
+                cmd
+            ),
         ),
     };
 

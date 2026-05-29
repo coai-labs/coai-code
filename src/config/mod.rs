@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 /// Main configuration structure for CoAI Code
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     /// LLM configuration section
     #[serde(default)]
@@ -231,18 +231,6 @@ fn default_max_backups() -> usize {
 }
 
 // Default implementations
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            llm: LlmConfig::default(),
-            agent: AgentConfig::default(),
-            tui: TuiConfig::default(),
-            workspace: WorkspaceConfig::default(),
-            custom: HashMap::new(),
-        }
-    }
-}
 
 impl Default for LlmConfig {
     fn default() -> Self {

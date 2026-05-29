@@ -25,7 +25,10 @@ impl ExecTools {
         )
         .await
         .map_err(|_| {
-            CoAIError::Command(format!("Command timed out ({}s): {}", self.timeout_secs, command))
+            CoAIError::Command(format!(
+                "Command timed out ({}s): {}",
+                self.timeout_secs, command
+            ))
         })??;
 
         Ok(output)
@@ -39,7 +42,10 @@ impl ExecTools {
         )
         .await
         .map_err(|_| {
-            CoAIError::Command(format!("Command timed out ({}s): {}", self.timeout_secs, display))
+            CoAIError::Command(format!(
+                "Command timed out ({}s): {}",
+                self.timeout_secs, display
+            ))
         })??;
 
         Ok(output)
@@ -55,7 +61,9 @@ impl ExecTools {
             .stdin(Stdio::null())
             .output()
             .await
-            .map_err(|e| CoAIError::Command(format!("Failed to execute command {}: {}", command, e)))?;
+            .map_err(|e| {
+                CoAIError::Command(format!("Failed to execute command {}: {}", command, e))
+            })?;
 
         Ok(CommandOutput {
             stdout: String::from_utf8_lossy(&output.stdout).to_string(),
@@ -163,17 +171,26 @@ impl ExecTools {
         };
         let normalized = normalize_path(&full_path);
         if !normalized.starts_with(&workspace) {
-            return Err(CoAIError::Security(format!("cwd is outside the working directory: {}", cwd)));
+            return Err(CoAIError::Security(format!(
+                "cwd is outside the working directory: {}",
+                cwd
+            )));
         }
 
         let canonical = full_path
             .canonicalize()
             .map_err(|e| CoAIError::File(format!("Failed to resolve cwd {}: {}", cwd, e)))?;
         if !canonical.starts_with(&workspace) {
-            return Err(CoAIError::Security(format!("cwd is outside the working directory: {}", cwd)));
+            return Err(CoAIError::Security(format!(
+                "cwd is outside the working directory: {}",
+                cwd
+            )));
         }
         if !canonical.is_dir() {
-            return Err(CoAIError::Command(format!("cwd is not a directory: {}", cwd)));
+            return Err(CoAIError::Command(format!(
+                "cwd is not a directory: {}",
+                cwd
+            )));
         }
 
         Ok(canonical)

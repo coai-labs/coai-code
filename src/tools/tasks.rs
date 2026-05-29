@@ -94,7 +94,11 @@ pub fn render_checklist(tasks: &[TaskItem]) -> String {
         .count();
     let mut out = format!("Tasks ({}/{} done)\n", done, tasks.len());
     for task in tasks {
-        out.push_str(&format!("{} {}\n", task.status.marker(), task.content.trim()));
+        out.push_str(&format!(
+            "{} {}\n",
+            task.status.marker(),
+            task.content.trim()
+        ));
     }
     out.trim_end().to_string()
 }

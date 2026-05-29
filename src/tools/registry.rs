@@ -132,7 +132,10 @@ impl ToolRegistry {
         let parts: Vec<&str> = tool_name.split('.').collect();
 
         if parts.len() != 2 {
-            return Err(CoAIError::Other(format!("Invalid tool name: {}", call.tool)));
+            return Err(CoAIError::Other(format!(
+                "Invalid tool name: {}",
+                call.tool
+            )));
         }
 
         let (category, method) = (parts[0], parts[1]);
@@ -151,7 +154,10 @@ impl ToolRegistry {
             "git" => self.execute_git(method, &call.params).await,
             "tasks" => self.execute_tasks(method, &call.params).await,
             "agent" => Box::pin(self.execute_agent(method, &call.params)).await,
-            _ => Err(CoAIError::Other(format!("Unknown tool category: {}", category))),
+            _ => Err(CoAIError::Other(format!(
+                "Unknown tool category: {}",
+                category
+            ))),
         }
     }
 
@@ -484,9 +490,9 @@ impl ToolRegistry {
 
         let result = match method {
             "read" => {
-                let path = params["path"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: path".to_string()))?;
+                let path = params["path"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: path".to_string())
+                })?;
                 file.read(path).await?
             }
             "write" => {
@@ -537,9 +543,9 @@ impl ToolRegistry {
                 serde_json::to_string(&files)?
             }
             "delete" => {
-                let path = params["path"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: path".to_string()))?;
+                let path = params["path"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: path".to_string())
+                })?;
                 file.delete(path).await?;
                 String::new()
             }
@@ -559,33 +565,33 @@ impl ToolRegistry {
 
         let result = match method {
             "grep" => {
-                let pattern = params["pattern"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: pattern".to_string()))?;
+                let pattern = params["pattern"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: pattern".to_string())
+                })?;
                 let path = params["path"].as_str();
                 let results = search.grep(pattern, path).await?;
                 serde_json::to_string(&results)?
             }
             "find" => {
-                let name = params["name"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: name".to_string()))?;
+                let name = params["name"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: name".to_string())
+                })?;
                 let path = params["path"].as_str();
                 let results = search.find(name, path).await?;
                 serde_json::to_string(&results)?
             }
             "regex" => {
-                let pattern = params["pattern"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: pattern".to_string()))?;
+                let pattern = params["pattern"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: pattern".to_string())
+                })?;
                 let path = params["path"].as_str();
                 let results = search.regex(pattern, path).await?;
                 serde_json::to_string(&results)?
             }
             "semantic" => {
-                let query = params["query"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: query".to_string()))?;
+                let query = params["query"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: query".to_string())
+                })?;
                 let k = optional_usize(params, "k")
                     .or_else(|| optional_usize(params, "limit"))
                     .unwrap_or(10);
@@ -597,7 +603,12 @@ impl ToolRegistry {
                 let path = params["path"].as_str();
                 search.index(path).await?
             }
-            _ => return Err(CoAIError::Other(format!("Unknown search method: {}", method))),
+            _ => {
+                return Err(CoAIError::Other(format!(
+                    "Unknown search method: {}",
+                    method
+                )))
+            }
         };
 
         Ok(ToolResult {
@@ -613,9 +624,9 @@ impl ToolRegistry {
 
         let result = match method {
             "run" => {
-                let command = params["command"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: command".to_string()))?;
+                let command = params["command"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: command".to_string())
+                })?;
                 let cwd = params["cwd"].as_str();
                 let output = exec.run(command, cwd).await?;
                 serde_json::to_string(&output)?
@@ -672,7 +683,12 @@ impl ToolRegistry {
                 let result = validate.test(filter).await?;
                 serde_json::to_string(&result)?
             }
-            _ => return Err(CoAIError::Other(format!("Unknown validate method: {}", method))),
+            _ => {
+                return Err(CoAIError::Other(format!(
+                    "Unknown validate method: {}",
+                    method
+                )))
+            }
         };
 
         Ok(ToolResult {
@@ -699,7 +715,9 @@ impl ToolRegistry {
                 let paths = params["paths"]
                     .as_str()
                     .or_else(|| params["path"].as_str())
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: paths".to_string()))?;
+                    .ok_or_else(|| {
+                        CoAIError::Other("Missing required parameter: paths".to_string())
+                    })?;
                 let paths: Vec<String> = paths.split_whitespace().map(|s| s.to_string()).collect();
                 if paths.is_empty() {
                     return Err(CoAIError::Other("paths parameter is empty".to_string()));
@@ -707,7 +725,12 @@ impl ToolRegistry {
                 let result = cleanup.remove(&paths).await?;
                 serde_json::to_string(&result)?
             }
-            _ => return Err(CoAIError::Other(format!("Unknown cleanup method: {}", method))),
+            _ => {
+                return Err(CoAIError::Other(format!(
+                    "Unknown cleanup method: {}",
+                    method
+                )))
+            }
         };
 
         Ok(ToolResult {
@@ -723,27 +746,27 @@ impl ToolRegistry {
 
         let result = match method {
             "http_get" => {
-                let url = params["url"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: url".to_string()))?;
+                let url = params["url"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: url".to_string())
+                })?;
                 net.http_get(url).await?
             }
             "http_post" => {
-                let url = params["url"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: url".to_string()))?;
-                let body = params["body"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: body".to_string()))?;
+                let url = params["url"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: url".to_string())
+                })?;
+                let body = params["body"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: body".to_string())
+                })?;
                 net.http_post(url, body).await?
             }
             "http_request" => {
-                let method_param = params["method"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: method".to_string()))?;
-                let url = params["url"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: url".to_string()))?;
+                let method_param = params["method"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: method".to_string())
+                })?;
+                let url = params["url"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: url".to_string())
+                })?;
 
                 let headers = if let Some(headers_value) = params.get("headers") {
                     if let Some(headers_obj) = headers_value.as_object() {
@@ -766,15 +789,15 @@ impl ToolRegistry {
                 net.http_request(method_param, url, headers, body).await?
             }
             "search" => {
-                let query = params["query"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: query".to_string()))?;
+                let query = params["query"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: query".to_string())
+                })?;
                 net.web_search(query).await?
             }
             "browser" => {
-                let url = params["url"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: url".to_string()))?;
+                let url = params["url"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: url".to_string())
+                })?;
                 net.open_browser(url)?
             }
             _ => return Err(CoAIError::Other(format!("Unknown net method: {}", method))),
@@ -811,9 +834,9 @@ impl ToolRegistry {
                 history.search(query, limit, status, tag).await?
             }
             "show" | "get" => {
-                let id = params["id"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: id".to_string()))?;
+                let id = params["id"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: id".to_string())
+                })?;
                 history.show(id).await?
             }
             "export" => {
@@ -822,12 +845,17 @@ impl ToolRegistry {
             }
             "stats" => history.stats().await?,
             "delete" => {
-                let id = params["id"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: id".to_string()))?;
+                let id = params["id"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: id".to_string())
+                })?;
                 history.delete(id).await?
             }
-            _ => return Err(CoAIError::Other(format!("Unknown history method: {}", method))),
+            _ => {
+                return Err(CoAIError::Other(format!(
+                    "Unknown history method: {}",
+                    method
+                )))
+            }
         };
 
         Ok(ToolResult {
@@ -844,16 +872,18 @@ impl ToolRegistry {
         let result = match method {
             "read" => memory.read().await?,
             "search" => {
-                let query = params["query"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: query".to_string()))?;
+                let query = params["query"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: query".to_string())
+                })?;
                 memory.search(query).await?
             }
             "append" => {
                 let content = params["content"]
                     .as_str()
                     .or_else(|| params["text"].as_str())
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: content".to_string()))?;
+                    .ok_or_else(|| {
+                        CoAIError::Other("Missing required parameter: content".to_string())
+                    })?;
                 let section = params["section"].as_str();
                 memory.append(content, section).await?
             }
@@ -864,7 +894,9 @@ impl ToolRegistry {
                 } else if let Some(section) = params["section"].as_str() {
                     memory.delete_section(section).await?
                 } else {
-                    return Err(CoAIError::Other("Missing required parameter: line or section".to_string()));
+                    return Err(CoAIError::Other(
+                        "Missing required parameter: line or section".to_string(),
+                    ));
                 }
             }
             "edit" => memory.edit_path().await?,
@@ -872,11 +904,18 @@ impl ToolRegistry {
                 let content = params["content"]
                     .as_str()
                     .or_else(|| params["text"].as_str())
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: content".to_string()))?;
+                    .ok_or_else(|| {
+                        CoAIError::Other("Missing required parameter: content".to_string())
+                    })?;
                 memory.write(content).await?
             }
             "clear" => memory.clear().await?,
-            _ => return Err(CoAIError::Other(format!("Unknown memory method: {}", method))),
+            _ => {
+                return Err(CoAIError::Other(format!(
+                    "Unknown memory method: {}",
+                    method
+                )))
+            }
         };
 
         Ok(ToolResult {
@@ -893,9 +932,9 @@ impl ToolRegistry {
         let result = match method {
             "list" => skills.list().await?,
             "search" => {
-                let query = params["query"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: query".to_string()))?;
+                let query = params["query"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: query".to_string())
+                })?;
                 skills.search(query).await?
             }
             "read" => {
@@ -903,10 +942,17 @@ impl ToolRegistry {
                     .as_str()
                     .or_else(|| params["path"].as_str())
                     .or_else(|| params["skill"].as_str())
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: name or path".to_string()))?;
+                    .ok_or_else(|| {
+                        CoAIError::Other("Missing required parameter: name or path".to_string())
+                    })?;
                 skills.read(name).await?
             }
-            _ => return Err(CoAIError::Other(format!("Unknown skills method: {}", method))),
+            _ => {
+                return Err(CoAIError::Other(format!(
+                    "Unknown skills method: {}",
+                    method
+                )))
+            }
         };
 
         Ok(ToolResult {
@@ -935,13 +981,14 @@ impl ToolRegistry {
                     })
                     .map(|tool| tool.reference())
                     .collect();
-                serde_json::to_string_pretty(&tools)
-                    .map_err(|e| CoAIError::Other(format!("Failed to serialize tool list: {}", e)))?
+                serde_json::to_string_pretty(&tools).map_err(|e| {
+                    CoAIError::Other(format!("Failed to serialize tool list: {}", e))
+                })?
             }
             "search" => {
-                let query = params["query"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: query".to_string()))?;
+                let query = params["query"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: query".to_string())
+                })?;
                 let query = query.to_lowercase();
                 let category = params["category"].as_str();
                 let tools: Vec<serde_json::Value> = self
@@ -962,24 +1009,33 @@ impl ToolRegistry {
                     })
                     .map(|tool| tool.reference())
                     .collect();
-                serde_json::to_string_pretty(&tools)
-                    .map_err(|e| CoAIError::Other(format!("Failed to serialize tool search results: {}", e)))?
+                serde_json::to_string_pretty(&tools).map_err(|e| {
+                    CoAIError::Other(format!("Failed to serialize tool search results: {}", e))
+                })?
             }
             "info" => {
                 let name = params["name"]
                     .as_str()
                     .or_else(|| params["tool"].as_str())
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: name".to_string()))?;
+                    .ok_or_else(|| {
+                        CoAIError::Other("Missing required parameter: name".to_string())
+                    })?;
                 let normalized = name.replace('_', ".");
                 let tool = self
                     .list_tools()
                     .into_iter()
                     .find(|tool| tool.name == normalized || tool.name == name)
                     .ok_or_else(|| CoAIError::Other(format!("Unknown tool: {}", name)))?;
-                serde_json::to_string_pretty(&tool.reference())
-                    .map_err(|e| CoAIError::Other(format!("Failed to serialize tool info: {}", e)))?
+                serde_json::to_string_pretty(&tool.reference()).map_err(|e| {
+                    CoAIError::Other(format!("Failed to serialize tool info: {}", e))
+                })?
             }
-            _ => return Err(CoAIError::Other(format!("Unknown tools method: {}", method))),
+            _ => {
+                return Err(CoAIError::Other(format!(
+                    "Unknown tools method: {}",
+                    method
+                )))
+            }
         };
 
         Ok(ToolResult {
@@ -1003,15 +1059,15 @@ impl ToolRegistry {
                 git.diff(staged, path).await?
             }
             "add" => {
-                let files = params["files"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: files".to_string()))?;
+                let files = params["files"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: files".to_string())
+                })?;
                 git.add(files).await?
             }
             "commit" => {
-                let message = params["message"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: message".to_string()))?;
+                let message = params["message"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: message".to_string())
+                })?;
                 git.commit(message).await?
             }
             "log" => {
@@ -1054,7 +1110,12 @@ impl ToolRegistry {
                 tasks.write(items)?
             }
             "read" => tasks.read()?,
-            _ => return Err(CoAIError::Other(format!("Unknown tasks method: {}", method))),
+            _ => {
+                return Err(CoAIError::Other(format!(
+                    "Unknown tasks method: {}",
+                    method
+                )))
+            }
         };
         Ok(ToolResult {
             success: true,
@@ -1071,16 +1132,15 @@ impl ToolRegistry {
             ));
         }
 
-        let llm_config = self
-            .llm_config
-            .clone()
-            .ok_or_else(|| CoAIError::Other("LLM not configured; cannot dispatch subagent".to_string()))?;
+        let llm_config = self.llm_config.clone().ok_or_else(|| {
+            CoAIError::Other("LLM not configured; cannot dispatch subagent".to_string())
+        })?;
 
         let result = match method {
             "spawn" => {
-                let task = params["task"]
-                    .as_str()
-                    .ok_or_else(|| CoAIError::Other("Missing required parameter: task".to_string()))?;
+                let task = params["task"].as_str().ok_or_else(|| {
+                    CoAIError::Other("Missing required parameter: task".to_string())
+                })?;
                 let role = params["role"].as_str();
                 let write_scope = params["write_scope"].as_str();
                 let mut agent =
@@ -1091,7 +1151,12 @@ impl ToolRegistry {
                 let result = agent.spawn(task, role, write_scope).await?;
                 serde_json::to_string(&result)?
             }
-            _ => return Err(CoAIError::Other(format!("Unknown agent method: {}", method))),
+            _ => {
+                return Err(CoAIError::Other(format!(
+                    "Unknown agent method: {}",
+                    method
+                )))
+            }
         };
 
         Ok(ToolResult {
@@ -1179,7 +1244,9 @@ fn tool_examples(name: &str) -> Vec<serde_json::Value> {
         "file.edit" => vec![serde_json::json!({"path": "src/main.rs", "old": "foo", "new": "bar"})],
         "search.grep" => vec![serde_json::json!({"pattern": "TODO", "path": "src"})],
         "search.semantic" => {
-            vec![serde_json::json!({"query": "resume interrupted long task", "path": "src", "k": 5})]
+            vec![
+                serde_json::json!({"query": "resume interrupted long task", "path": "src", "k": 5}),
+            ]
         }
         "search.index" => vec![serde_json::json!({"path": "src"})],
         "exec.run" => vec![serde_json::json!({"command": "cargo test", "cwd": "."})],

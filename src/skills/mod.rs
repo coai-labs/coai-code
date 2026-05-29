@@ -108,7 +108,10 @@ impl SkillRegistry {
         }
 
         match matches.len() {
-            0 => Err(CoAIError::Other(format!("Skill not found: {}", name_or_path))),
+            0 => Err(CoAIError::Other(format!(
+                "Skill not found: {}",
+                name_or_path
+            ))),
             1 => fs::read_to_string(&matches[0].skill_file).map_err(|e| {
                 CoAIError::File(format!(
                     "Failed to read skill {}: {}",
@@ -179,7 +182,11 @@ impl SkillRegistry {
                     continue;
                 }
                 let content = fs::read_to_string(&skill_file).map_err(|e| {
-                    CoAIError::File(format!("Failed to read skill {}: {}", skill_file.display(), e))
+                    CoAIError::File(format!(
+                        "Failed to read skill {}: {}",
+                        skill_file.display(),
+                        e
+                    ))
                 })?;
                 let metadata = parse_skill_metadata(&content, &skill_dir);
                 entries.push(SkillEntry {
@@ -266,10 +273,16 @@ fn skill_dirs_under(root: &Path) -> Result<Vec<PathBuf>> {
     }
 
     let mut dirs = Vec::new();
-    let entries = fs::read_dir(root)
-        .map_err(|e| CoAIError::File(format!("Failed to read skill directory {}: {}", root.display(), e)))?;
+    let entries = fs::read_dir(root).map_err(|e| {
+        CoAIError::File(format!(
+            "Failed to read skill directory {}: {}",
+            root.display(),
+            e
+        ))
+    })?;
     for entry in entries {
-        let entry = entry.map_err(|e| CoAIError::File(format!("Failed to read skill directory entry: {}", e)))?;
+        let entry = entry
+            .map_err(|e| CoAIError::File(format!("Failed to read skill directory entry: {}", e)))?;
         let path = entry.path();
         if path.is_dir() && find_skill_file(&path).is_some() {
             dirs.push(path);

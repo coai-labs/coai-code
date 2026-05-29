@@ -271,7 +271,10 @@ impl NetTools {
             Err(e) => {
                 let elapsed = t0.elapsed().as_millis() as u64;
                 self.log_request("SEARCH", &url, status, 0, elapsed, Some(&e.to_string()));
-                return Err(CoAIError::Other(format!("Failed to read search response: {}", e)));
+                return Err(CoAIError::Other(format!(
+                    "Failed to read search response: {}",
+                    e
+                )));
             }
         };
 
@@ -284,7 +287,9 @@ impl NetTools {
         output.push_str(&format!("Search: {}\n\n", query));
 
         if results.is_empty() {
-            output.push_str("No search results found. Try different keywords or visit a known site directly.\n");
+            output.push_str(
+                "No search results found. Try different keywords or visit a known site directly.\n",
+            );
         } else {
             for (i, r) in results.iter().enumerate() {
                 output.push_str(&format!(
@@ -347,14 +352,13 @@ fn parse_search_html(html: &str) -> Vec<SearchResult> {
                                 && title.len() < 300
                                 && is_chinese_or_english_title(&title)
                                 && !is_noise_title(&title)
+                                && !results.iter().any(|r: &SearchResult| r.title == title)
                             {
-                                if !results.iter().any(|r: &SearchResult| r.title == title) {
-                                    results.push(SearchResult {
-                                        title,
-                                        url,
-                                        snippet: String::new(),
-                                    });
-                                }
+                                results.push(SearchResult {
+                                    title,
+                                    url,
+                                    snippet: String::new(),
+                                });
                             }
                         }
                     }
@@ -545,11 +549,11 @@ fn parse_duckduckgo_html(html: &str) -> Vec<SearchResult> {
     }
 
     let count = titles.len().min(snippets.len()).min(10);
-    for i in 0..count {
+    for ((url, title), snippet) in titles.iter().zip(snippets.iter()).take(count) {
         results.push(SearchResult {
-            title: titles[i].1.clone(),
-            url: titles[i].0.clone(),
-            snippet: snippets.get(i).cloned().unwrap_or_default(),
+            title: title.clone(),
+            url: url.clone(),
+            snippet: snippet.clone(),
         });
     }
     results
@@ -608,7 +612,7 @@ fn url_decode(s: &str) -> String {
         match bytes[i] {
             b'%' if i + 2 < bytes.len() => {
                 if let Ok(hex) = u8::from_str_radix(
-                    &std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or("00"),
+                    std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or("00"),
                     16,
                 ) {
                     result.push(hex as char);
@@ -855,7 +859,8 @@ async fn read_text_limited(
     let mut truncated = false;
 
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| CoAIError::Other(format!("Failed to read response body: {}", e)))?;
+        let chunk =
+            chunk.map_err(|e| CoAIError::Other(format!("Failed to read response body: {}", e)))?;
         let remaining = max_bytes.saturating_sub(bytes.len());
         if chunk.len() > remaining {
             bytes.extend_from_slice(&chunk[..remaining]);

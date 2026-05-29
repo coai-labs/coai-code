@@ -138,7 +138,8 @@ impl FileTools {
             .map_err(|e| CoAIError::File(format!("Failed to read directory {}: {}", dir, e)))?;
 
         for entry in entries {
-            let entry = entry.map_err(|e| CoAIError::File(format!("Failed to read directory entry: {}", e)))?;
+            let entry = entry
+                .map_err(|e| CoAIError::File(format!("Failed to read directory entry: {}", e)))?;
             let path = entry.path();
             let metadata = entry.metadata().ok();
 
@@ -152,7 +153,7 @@ impl FileTools {
                 size: metadata.as_ref().map(|m| m.len()).unwrap_or(0),
                 modified: metadata
                     .and_then(|m| m.modified().ok())
-                    .map(|t| chrono::DateTime::from(t)),
+                    .map(chrono::DateTime::from),
             });
         }
 
@@ -163,8 +164,9 @@ impl FileTools {
         let full_path = self.resolve_path(path)?;
 
         if full_path.is_dir() {
-            fs::remove_dir_all(&full_path)
-                .map_err(|e| CoAIError::File(format!("Failed to delete directory {}: {}", path, e)))?;
+            fs::remove_dir_all(&full_path).map_err(|e| {
+                CoAIError::File(format!("Failed to delete directory {}: {}", path, e))
+            })?;
         } else {
             fs::remove_file(&full_path)
                 .map_err(|e| CoAIError::File(format!("Failed to delete file {}: {}", path, e)))?;
@@ -182,8 +184,9 @@ impl FileTools {
                 .map_err(|e| CoAIError::File(format!("Failed to create directory: {}", e)))?;
         }
 
-        fs::copy(&from_path, &to_path)
-            .map_err(|e| CoAIError::File(format!("Failed to copy file {} -> {}: {}", from, to, e)))?;
+        fs::copy(&from_path, &to_path).map_err(|e| {
+            CoAIError::File(format!("Failed to copy file {} -> {}: {}", from, to, e))
+        })?;
 
         Ok(())
     }
@@ -197,8 +200,9 @@ impl FileTools {
                 .map_err(|e| CoAIError::File(format!("Failed to create directory: {}", e)))?;
         }
 
-        fs::rename(&from_path, &to_path)
-            .map_err(|e| CoAIError::File(format!("Failed to move file {} -> {}: {}", from, to, e)))?;
+        fs::rename(&from_path, &to_path).map_err(|e| {
+            CoAIError::File(format!("Failed to move file {} -> {}: {}", from, to, e))
+        })?;
 
         Ok(())
     }
@@ -257,9 +261,9 @@ impl FileTools {
         }
 
         if full_path.exists() {
-            let canonical = full_path
-                .canonicalize()
-                .map_err(|e| CoAIError::File(format!("Failed to resolve path {}: {}", path.display(), e)))?;
+            let canonical = full_path.canonicalize().map_err(|e| {
+                CoAIError::File(format!("Failed to resolve path {}: {}", path.display(), e))
+            })?;
             if !canonical.starts_with(&workspace) && canonical != workspace {
                 return Err(CoAIError::Security(format!(
                     "Path is outside the working directory: {}. Use a relative path inside the workspace; if an external path is truly needed, ask the user to confirm the target path and permissions.",
@@ -537,8 +541,8 @@ fn compute_hunk_position(ops: &[EditOp], hunk: &[(usize, &EditOp)]) -> (usize, u
     let mut old_line = 1usize;
     let mut new_line = 1usize;
 
-    for i in 0..first_idx {
-        match &ops[i] {
+    for op in ops.iter().take(first_idx) {
+        match op {
             EditOp::Equal(_) => {
                 old_line += 1;
                 new_line += 1;

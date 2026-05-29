@@ -53,8 +53,8 @@ impl HistoryTools {
     }
 
     pub async fn show(&self, id: &str) -> Result<String> {
-        let id =
-            Uuid::parse_str(id).map_err(|_| CoAIError::Other(format!("Invalid history record ID: {}", id)))?;
+        let id = Uuid::parse_str(id)
+            .map_err(|_| CoAIError::Other(format!("Invalid history record ID: {}", id)))?;
         let store = HistoryStore::new(&self.storage_path);
         let record = store
             .get(&id)
@@ -90,8 +90,8 @@ impl HistoryTools {
     }
 
     pub async fn delete(&self, id: &str) -> Result<String> {
-        let id =
-            Uuid::parse_str(id).map_err(|_| CoAIError::Other(format!("Invalid history record ID: {}", id)))?;
+        let id = Uuid::parse_str(id)
+            .map_err(|_| CoAIError::Other(format!("Invalid history record ID: {}", id)))?;
         let mut store = HistoryStore::new(&self.storage_path);
         let deleted = store.delete(&id)?;
         serde_json::to_string_pretty(&serde_json::json!({

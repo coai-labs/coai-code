@@ -59,14 +59,18 @@ impl GitTools {
             args.push(file);
         }
         if args.len() == 1 {
-            return Err(CoAIError::Other("Missing required parameter: files".to_string()));
+            return Err(CoAIError::Other(
+                "Missing required parameter: files".to_string(),
+            ));
         }
         self.run_git(&args).await
     }
 
     pub async fn commit(&self, message: &str) -> Result<GitCommandResult> {
         if message.trim().is_empty() {
-            return Err(CoAIError::Other("Missing required parameter: message".to_string()));
+            return Err(CoAIError::Other(
+                "Missing required parameter: message".to_string(),
+            ));
         }
         self.run_git(&["commit", "-m", message]).await
     }

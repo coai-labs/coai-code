@@ -30,6 +30,7 @@ pub struct MessageBubble {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MessageRole {
+    #[allow(dead_code)]
     Welcome,
     User,
     Assistant,
@@ -84,6 +85,7 @@ pub struct RenderHistoryLine {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct RenderHistoryEvent {
     pub role: MessageRole,
     pub content: String,
@@ -126,6 +128,7 @@ pub enum UiEvent {
     MessagesUpdated(Vec<Message>),
 }
 
+#[allow(dead_code)]
 pub struct AppState {
     pub mode: UiMode,
     pub input_buffer: String,
@@ -223,6 +226,7 @@ pub struct AppState {
     pub tasks: Vec<crate::tools::TaskItem>,
 }
 
+#[allow(dead_code)]
 impl AppState {
     const HISTORY_FILE: &'static str = ".coai/state/input_history.txt";
     const MAX_HISTORY: usize = 1000;
@@ -384,7 +388,7 @@ impl AppState {
     /// When reaching past the newest entry, restores the saved draft.
     pub fn history_next(&mut self) {
         match self.history_index {
-            None => return,
+            None => (),
             Some(i) if i + 1 >= self.input_history.len() => {
                 // Past newest — restore draft
                 self.history_index = None;

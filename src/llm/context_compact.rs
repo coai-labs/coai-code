@@ -117,10 +117,7 @@ pub fn is_context_limit_error(message: &str) -> bool {
 }
 
 pub fn estimate_messages_tokens(messages: &[Message]) -> usize {
-    messages
-        .iter()
-        .map(|message| estimate_message_tokens(message))
-        .sum()
+    messages.iter().map(estimate_message_tokens).sum()
 }
 
 fn compact_to_budget(messages: &[Message], budget: usize) -> Vec<Message> {
@@ -293,7 +290,10 @@ mod tests {
     fn compacts_long_history_under_budget() {
         let mut messages = vec![Message::system("system")];
         for i in 0..40 {
-            messages.push(Message::user(format!("user message {i} {}", "x".repeat(400))));
+            messages.push(Message::user(format!(
+                "user message {i} {}",
+                "x".repeat(400)
+            )));
             messages.push(Message::assistant(format!(
                 "assistant reply {i} {}",
                 "y".repeat(400)

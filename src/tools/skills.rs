@@ -21,8 +21,9 @@ impl SkillTools {
 
     pub async fn search(&self, query: &str) -> Result<String> {
         let skills = self.registry.search(query)?;
-        serde_json::to_string_pretty(&skills)
-            .map_err(|e| CoAIError::Other(format!("Failed to serialize skill search results: {}", e)))
+        serde_json::to_string_pretty(&skills).map_err(|e| {
+            CoAIError::Other(format!("Failed to serialize skill search results: {}", e))
+        })
     }
 
     pub async fn read(&self, name_or_path: &str) -> Result<String> {

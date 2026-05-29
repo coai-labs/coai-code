@@ -29,9 +29,10 @@ pub struct Command {
 }
 
 /// Source of the command
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum CommandSource {
     /// Command from user input
+    #[default]
     User,
     /// Command from system (auto-generated)
     System,
@@ -144,12 +145,6 @@ pub enum CommandErrorType {
     Unknown,
 }
 
-impl Default for CommandSource {
-    fn default() -> Self {
-        CommandSource::User
-    }
-}
-
 impl Command {
     /// Parse a command string
     pub fn parse(input: &str) -> CommandParseResult {
@@ -178,8 +173,8 @@ impl Command {
         while i < parts.len() {
             let part = parts[i];
 
-            if part.starts_with("--") {
-                let arg_name = part[2..].to_string();
+            if let Some(stripped) = part.strip_prefix("--") {
+                let arg_name = stripped.to_string();
 
                 if i + 1 < parts.len() && !parts[i + 1].starts_with('-') {
                     flags.insert(arg_name, Some(parts[i + 1].to_string()));

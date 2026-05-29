@@ -121,10 +121,12 @@ impl ExecutionEngine {
     pub async fn execute(&self, task_description: &str) -> Result<ExecutionResult> {
         let start_time = Instant::now();
 
-        let mut task_record = TaskRecord::default();
-        task_record.description = task_description.to_string();
-        task_record.status = TaskStatus::InProgress;
-        task_record.created_at = Utc::now();
+        let mut task_record = TaskRecord {
+            description: task_description.to_string(),
+            status: TaskStatus::InProgress,
+            created_at: Utc::now(),
+            ..TaskRecord::default()
+        };
 
         self.history.write().await.store(task_record.clone())?;
 

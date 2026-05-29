@@ -55,10 +55,12 @@ impl CoAIAgent {
 
     /// Execute a task via the LLM tool loop
     pub async fn execute_task(&self, description: &str) -> Result<TaskRecord> {
-        let mut record = TaskRecord::default();
-        record.description = description.to_string();
-        record.status = TaskStatus::InProgress;
-        record.created_at = chrono::Utc::now();
+        let mut record = TaskRecord {
+            description: description.to_string(),
+            status: TaskStatus::InProgress,
+            created_at: chrono::Utc::now(),
+            ..TaskRecord::default()
+        };
 
         self.history.write().await.store(record.clone())?;
 

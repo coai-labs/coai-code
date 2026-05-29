@@ -243,9 +243,7 @@ impl ContextManager {
             recency_score + size_score
         })
     }
-
 }
-
 
 fn estimate_tokens(text: &str) -> usize {
     let char_count = text.chars().count();

@@ -250,10 +250,10 @@ impl TruncationLimits {
         // Use ~1.5% of context for dep output, ~2% for files, ~3% for description
         let scale = context_length as f64 / 1_000_000.0;
         Self {
-            dep_output_chars: (8_000.0 * scale).max(1_500.0).min(20_000.0) as usize,
-            context_file_chars: (10_000.0 * scale).max(2_000.0).min(30_000.0) as usize,
-            description_chars: (15_000.0 * scale).max(3_000.0).min(30_000.0) as usize,
-            live_context_chars: (1_000.0 * scale).max(300.0).min(2_000.0) as usize,
+            dep_output_chars: (8_000.0 * scale).clamp(1_500.0, 20_000.0) as usize,
+            context_file_chars: (10_000.0 * scale).clamp(2_000.0, 30_000.0) as usize,
+            description_chars: (15_000.0 * scale).clamp(3_000.0, 30_000.0) as usize,
+            live_context_chars: (1_000.0 * scale).clamp(300.0, 2_000.0) as usize,
         }
     }
 }
@@ -442,7 +442,7 @@ mod tests {
             cfg.extra_params.get("output_config"),
             Some(&serde_json::json!({ "effort": "max" }))
         );
-        assert!(cfg.extra_params.get("reasoning_effort").is_none());
+        assert!(!cfg.extra_params.contains_key("reasoning_effort"));
     }
 
     #[test]
@@ -457,7 +457,7 @@ mod tests {
             cfg.extra_params.get("reasoning_effort"),
             Some(&serde_json::json!("max"))
         );
-        assert!(cfg.extra_params.get("output_config").is_none());
+        assert!(!cfg.extra_params.contains_key("output_config"));
     }
 
     #[test]

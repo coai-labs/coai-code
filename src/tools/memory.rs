@@ -22,7 +22,8 @@ impl MemoryTools {
         if !path.exists() {
             return Ok(DEFAULT_MEMORY.to_string());
         }
-        fs::read_to_string(&path).map_err(|e| CoAIError::File(format!("Failed to read project memory: {}", e)))
+        fs::read_to_string(&path)
+            .map_err(|e| CoAIError::File(format!("Failed to read project memory: {}", e)))
     }
 
     pub async fn search(&self, query: &str) -> Result<String> {
@@ -40,8 +41,9 @@ impl MemoryTools {
             })
             .collect();
 
-        serde_json::to_string_pretty(&matches)
-            .map_err(|e| CoAIError::Other(format!("Failed to serialize memory search results: {}", e)))
+        serde_json::to_string_pretty(&matches).map_err(|e| {
+            CoAIError::Other(format!("Failed to serialize memory search results: {}", e))
+        })
     }
 
     pub async fn append(&self, content: &str, section: Option<&str>) -> Result<String> {
@@ -140,7 +142,10 @@ impl MemoryTools {
                 None
             }
         }) else {
-            return Err(CoAIError::Other(format!("Memory section not found: {}", section)));
+            return Err(CoAIError::Other(format!(
+                "Memory section not found: {}",
+                section
+            )));
         };
 
         let end = lines
@@ -166,8 +171,9 @@ impl MemoryTools {
         let path = self.memory_path();
         ensure_parent(&path)?;
         if !path.exists() {
-            fs::write(&path, DEFAULT_MEMORY)
-                .map_err(|e| CoAIError::File(format!("Failed to create project memory file: {}", e)))?;
+            fs::write(&path, DEFAULT_MEMORY).map_err(|e| {
+                CoAIError::File(format!("Failed to create project memory file: {}", e))
+            })?;
         }
         Ok(path.display().to_string())
     }
@@ -216,8 +222,9 @@ fn contains_heading(content: &str, section: &str) -> bool {
 
 fn ensure_parent(path: &Path) -> Result<()> {
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| CoAIError::File(format!("Failed to create project memory directory: {}", e)))?;
+        fs::create_dir_all(parent).map_err(|e| {
+            CoAIError::File(format!("Failed to create project memory directory: {}", e))
+        })?;
     }
     Ok(())
 }

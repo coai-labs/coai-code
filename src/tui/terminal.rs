@@ -102,6 +102,7 @@ impl Terminal {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn move_to(&mut self, col: u16, row: u16) -> io::Result<()> {
         queue!(self.stdout, cursor::MoveTo(col, row))
     }

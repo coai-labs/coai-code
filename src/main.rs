@@ -286,7 +286,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 builder.llm_config(cfg)
             }
             _ => {
-                eprintln!("Unknown provider: {}; falling back to config file", provider);
+                eprintln!(
+                    "Unknown provider: {}; falling back to config file",
+                    provider
+                );
                 builder
             }
         },
@@ -300,7 +303,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             coai_code::config::llm_config_from_provider(provider_cfg)
                         else {
                             eprintln!("[CLI] Unknown provider: {}", provider_cfg.provider);
-                            return Err(format!("Unknown provider: {}", provider_cfg.provider).into());
+                            return Err(
+                                format!("Unknown provider: {}", provider_cfg.provider).into()
+                            );
                         };
                         builder.llm_config(llm_config)
                     } else {
@@ -712,7 +717,10 @@ fn handle_doctor() -> Result<(), Box<dyn std::error::Error>> {
 
     let tools = coai_code::tools::ToolRegistry::new(&cwd).list_tools();
     println!("Tool count: {}", tools.len());
-    println!("Run log directory: {}", cwd.join(".coai/state/runs").display());
+    println!(
+        "Run log directory: {}",
+        cwd.join(".coai/state/runs").display()
+    );
     println!(
         "Search index: {}",
         cwd.join(".coai/state/search-index.json").display()
@@ -881,7 +889,10 @@ async fn handle_config(
             }
         }
         ConfigCommands::Set { key, value } => {
-            println!("Config {} = {} (restart required to take effect)", key, value);
+            println!(
+                "Config {} = {} (restart required to take effect)",
+                key, value
+            );
         }
     }
     Ok(())
@@ -942,7 +953,9 @@ async fn handle_session(
                 messages.last().map(|message| &message.role),
                 Some(coai_code::llm::Role::User)
             ) {
-                messages.push(coai_code::llm::Message::user("Please continue from where you left off."));
+                messages.push(coai_code::llm::Message::user(
+                    "Please continue from where you left off.",
+                ));
             }
 
             let (_output, updated_messages) = agent

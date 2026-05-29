@@ -47,6 +47,7 @@ pub fn disable_bracketed_paste() -> io::Result<()> {
 /// Enable mouse event capture (button clicks, scroll, drag).
 ///
 /// Should be called when entering raw/interactive mode.
+#[allow(dead_code)]
 pub fn enable_mouse_capture() -> io::Result<()> {
     crossterm::execute!(io::stdout(), event::EnableMouseCapture)
 }
@@ -310,37 +311,27 @@ fn handle_input_key(event: KeyEvent, state: &mut AppState) -> Option<String> {
             state.input_buffer.insert(state.input_cursor, c);
             state.input_cursor += c.len_utf8();
         }
-        KeyCode::Backspace => {
-            if state.input_cursor > 0 {
-                let prev = prev_char_boundary(&state.input_buffer, state.input_cursor);
-                state.input_buffer.drain(prev..state.input_cursor);
-                state.input_cursor = prev;
-            }
+        KeyCode::Backspace if state.input_cursor > 0 => {
+            let prev = prev_char_boundary(&state.input_buffer, state.input_cursor);
+            state.input_buffer.drain(prev..state.input_cursor);
+            state.input_cursor = prev;
         }
-        KeyCode::Delete => {
-            if state.input_cursor < state.input_buffer.len() {
-                let next = next_char_boundary(&state.input_buffer, state.input_cursor);
-                state.input_buffer.drain(state.input_cursor..next);
-            }
+        KeyCode::Delete if state.input_cursor < state.input_buffer.len() => {
+            let next = next_char_boundary(&state.input_buffer, state.input_cursor);
+            state.input_buffer.drain(state.input_cursor..next);
         }
-        KeyCode::Left => {
-            if state.input_cursor > 0 {
-                state.input_cursor = prev_char_boundary(&state.input_buffer, state.input_cursor);
-            }
+        KeyCode::Left if state.input_cursor > 0 => {
+            state.input_cursor = prev_char_boundary(&state.input_buffer, state.input_cursor);
         }
-        KeyCode::Right => {
-            if state.input_cursor < state.input_buffer.len() {
-                state.input_cursor = next_char_boundary(&state.input_buffer, state.input_cursor);
-            }
+        KeyCode::Right if state.input_cursor < state.input_buffer.len() => {
+            state.input_cursor = next_char_boundary(&state.input_buffer, state.input_cursor);
         }
         KeyCode::Home => state.input_cursor = 0,
         KeyCode::End => state.input_cursor = state.input_buffer.len(),
         KeyCode::Up => state.history_prev(),
         KeyCode::Down => state.history_next(),
-        KeyCode::Tab => {
-            if state.input_buffer.starts_with('/') {
-                autocomplete_command(state);
-            }
+        KeyCode::Tab if state.input_buffer.starts_with('/') => {
+            autocomplete_command(state);
         }
         KeyCode::Esc => {
             state.input_buffer.clear();
@@ -455,7 +446,7 @@ fn autocomplete_command(state: &mut AppState) {
 
     let input = &state.input_buffer;
     for cmd in available {
-        if cmd.starts_with(input) && cmd != &input {
+        if cmd.starts_with(input) && cmd != input {
             state.input_buffer = cmd.to_string();
             state.input_cursor = cmd.len();
             return;

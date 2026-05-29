@@ -32,6 +32,7 @@ const DIFF_HUNK: Color = Color::Magenta;
 const MD_HEADING: Color = Color::Cyan;
 const MD_CODE_BLOCK: Color = Color::DarkGrey;
 const MD_QUOTE: Color = Color::Grey;
+#[allow(dead_code)]
 const THINKING_PREVIEW_LINES: usize = 3;
 const TOOL_CHILD_PREFIX: &str = "  ⎿ ";
 const TOOL_CHILD_CONTINUATION: &str = "    ";
@@ -47,6 +48,7 @@ const ANSI_CODE_META: &str = "\x1b[38;5;180m";
 // ─── Input area height ───────────────────────────────────
 
 /// Height of the fixed bottom area: activity + input frame + hint, or permission panel.
+#[allow(dead_code)]
 pub fn input_height(term: &Terminal, state: &AppState) -> u16 {
     let (tw, th) = term.size().unwrap_or((80, 24));
     if state.pending_permission.is_some() {
@@ -326,6 +328,7 @@ fn build_live_lines(term: &Terminal, state: &AppState) -> Vec<RenderedLine> {
     out
 }
 
+#[allow(dead_code)]
 fn record_render_event(state: &AppState, role: MessageRole, content: String) {
     if role == MessageRole::AssistantContinuation {
         let mut events = state.render_events.borrow_mut();
@@ -349,6 +352,7 @@ fn record_render_event(state: &AppState, role: MessageRole, content: String) {
     push_render_event(state, role, content);
 }
 
+#[allow(dead_code)]
 fn push_render_event(state: &AppState, role: MessageRole, content: String) {
     let mut events = state.render_events.borrow_mut();
     events.push(RenderHistoryEvent {
@@ -362,6 +366,7 @@ fn push_render_event(state: &AppState, role: MessageRole, content: String) {
     }
 }
 
+#[allow(dead_code)]
 fn rebuild_render_history(term: &Terminal, state: &AppState) {
     let width = term
         .size()
@@ -395,10 +400,12 @@ fn rebuild_render_history(term: &Terminal, state: &AppState) {
     *state.render_history.borrow_mut() = lines;
 }
 
+#[allow(dead_code)]
 fn render_clear_height(state: &AppState, current_height: u16) -> u16 {
     current_height.max(state.last_bottom_height.get())
 }
 
+#[allow(dead_code)]
 fn clear_bottom_area(term: &mut Terminal, height: u16) -> std::io::Result<()> {
     let (_, term_h) = term.size()?;
     let top = term_h.saturating_sub(height);
@@ -409,6 +416,7 @@ fn clear_bottom_area(term: &mut Terminal, height: u16) -> std::io::Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn redraw_visible_transcript(
     term: &mut Terminal,
     state: &AppState,
@@ -444,6 +452,7 @@ fn redraw_visible_transcript(
     Ok(())
 }
 
+#[allow(dead_code)]
 fn visible_transcript_frame(
     term: &Terminal,
     state: &AppState,
@@ -473,6 +482,7 @@ fn visible_transcript_frame(
     Ok(frame)
 }
 
+#[allow(dead_code)]
 fn blank_render_line() -> RenderHistoryLine {
     RenderHistoryLine {
         text: String::new(),
@@ -611,6 +621,7 @@ fn sentence_boundary(c: char) -> bool {
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn push_wrapped(
     out: &mut Vec<RenderedLine>,
     content: &str,
@@ -1032,22 +1043,14 @@ fn push_code_line(
     width: usize,
 ) {
     let chunks = code_line_chunks(raw, first_prefix, continuation_prefix, width);
-    for (idx, (prefix, chunk)) in chunks.into_iter().enumerate() {
+    for (prefix, chunk) in chunks {
         let highlighted = highlight_code_chunk(&chunk, lang);
         let text = if highlighted.is_empty() {
             prefix
         } else {
             format!("{prefix}{highlighted}{ANSI_RESET}")
         };
-        out.push(RenderedLine::new(
-            text,
-            if idx == 0 && raw.is_empty() {
-                Color::Reset
-            } else {
-                Color::Reset
-            },
-            false,
-        ));
+        out.push(RenderedLine::new(text, Color::Reset, false));
     }
 }
 
@@ -1666,9 +1669,9 @@ fn push_table(out: &mut Vec<RenderedLine>, rows: &[String], prefix: &str, width:
 
     let mut natural_widths = vec![1usize; col_count];
     for row in &parsed {
-        for i in 0..col_count {
+        for (i, w) in natural_widths.iter_mut().enumerate().take(col_count) {
             let cell = row.get(i).map(String::as_str).unwrap_or("");
-            natural_widths[i] = natural_widths[i].max(display_width(cell));
+            *w = (*w).max(display_width(cell));
         }
     }
 
@@ -1721,7 +1724,7 @@ fn should_render_table_as_records(
     available_width: usize,
 ) -> bool {
     let col_count = natural_widths.len();
-    if rows.len() <= 1 || col_count < 2 || col_count > 5 {
+    if rows.len() <= 1 || !(2..=5).contains(&col_count) {
         return false;
     }
 
@@ -1733,7 +1736,7 @@ fn should_render_table_as_records(
         || natural_widths.iter().any(|width| *width > 36)
         || rows.iter().any(|row| {
             row.iter()
-                .any(|cell| display_width(cell) > available_width.saturating_div(2).max(24))
+                .any(|cell| display_width(cell) > available_width.saturating_div(2).max(30))
         })
 }
 
@@ -2071,8 +2074,8 @@ fn push_chars(out: &mut String, chars: &[char], start: usize, end: usize) {
 fn find_closing_marker(chars: &[char], start: usize, c1: char, c2: char) -> Option<usize> {
     if c2 == '\0' {
         // Single-char marker
-        for i in start..chars.len() {
-            if chars[i] == c1 {
+        for (i, &ch) in chars.iter().enumerate().skip(start) {
+            if ch == c1 {
                 return Some(i);
             }
         }
@@ -2102,531 +2105,11 @@ fn push_heading(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn markdown_headings_wrap_as_separate_render_lines() {
-        let mut lines = Vec::new();
-        push_markdown(
-            &mut lines,
-            "# This is a very long heading used to test wrapping behavior",
-            "",
-            "",
-            12,
-        );
-
-        assert!(lines.len() > 1);
-        assert!(lines.iter().all(|line| !line.text.contains('\n')));
-        assert!(lines.iter().all(|line| line.bold));
-    }
-
-    #[test]
-    fn inline_markdown_strips_markers() {
-        assert_eq!(format_inline_md("run `cargo test`"), "run cargo test");
-        assert_eq!(
-            format_inline_md("this is **important** and *italic*"),
-            "this is important and italic"
-        );
-        assert_eq!(
-            format_inline_md("see [docs](https://example.com)"),
-            "see docs"
-        );
-    }
-
-    #[test]
-    fn tool_child_continuation_aligns_with_tool_name() {
-        let lines = wrap_prefixed_text(
-            "abcdefghijklmnopqrstuvwxyz",
-            TOOL_CHILD_PREFIX,
-            TOOL_CHILD_CONTINUATION,
-            12,
-        );
-
-        assert!(lines[0].starts_with("  ⎿ "));
-        assert!(lines.iter().skip(1).all(|line| line.starts_with("    ")));
-    }
-
-    #[test]
-    fn markdown_h4_heading_strips_marker() {
-        let mut lines = Vec::new();
-        push_markdown(&mut lines, "#### 1. OpenAI releases GPT-5.5", "", "", 80);
-
-        assert_eq!(lines.len(), 1);
-        assert_eq!(lines[0].text, "1. OpenAI releases GPT-5.5");
-        assert!(lines[0].bold);
-    }
-
-    #[test]
-    fn tool_markdown_lists_keep_tool_child_prefix() {
-        let lines = rendered_message_lines_at_width(
-            &MessageRole::ToolResult,
-            "- first item with a very long content string here\n1. second item",
-            30,
-        );
-
-        let visible = lines
-            .iter()
-            .filter(|line| !line.text.trim().is_empty())
-            .collect::<Vec<_>>();
-        assert!(visible
-            .iter()
-            .any(|line| line.text.starts_with("  ⎿ • first")));
-        assert!(visible
-            .iter()
-            .any(|line| line.text.starts_with("  ⎿ 1. second")));
-        assert!(!visible.iter().any(|line| line.text.starts_with("  • ")));
-        assert!(!visible.iter().any(|line| line.text.starts_with("  1. ")));
-    }
-
-    #[test]
-    fn code_fence_keeps_assistant_indent() {
-        let lines = rendered_message_lines_at_width(
-            &MessageRole::Assistant,
-            "```rust\nfn main() {}\n```",
-            40,
-        );
-
-        let visible = lines
-            .iter()
-            .filter(|line| !line.text.trim().is_empty())
-            .collect::<Vec<_>>();
-        assert!(visible.iter().all(|line| line.text.starts_with("  ")));
-        assert!(visible[0].text.contains("rust"));
-    }
-
-    #[test]
-    fn code_fence_uses_bordered_block_style() {
-        let lines = rendered_message_lines_at_width(
-            &MessageRole::Assistant,
-            "```rust\nlet value = 42;\n```",
-            48,
-        );
-
-        let visible = lines
-            .iter()
-            .filter(|line| !line.text.trim().is_empty())
-            .collect::<Vec<_>>();
-
-        assert!(
-            visible[0].text.starts_with("  ┌ rust "),
-            "{:?}",
-            visible[0].text
-        );
-        assert!(visible
-            .iter()
-            .any(|line| line.text.starts_with("  │ ") && line.text.contains("value")));
-        assert!(visible.last().unwrap().text.starts_with("  └"));
-    }
-
-    #[test]
-    fn code_fence_highlights_rust_keywords() {
-        let lines = rendered_message_lines_at_width(
-            &MessageRole::Assistant,
-            "```rust\nlet value = Some(42);\n// comment\n```",
-            80,
-        );
-
-        let rendered = lines
-            .iter()
-            .map(|line| line.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        assert!(rendered.contains(ANSI_CODE_KEYWORD), "{rendered:?}");
-        assert!(rendered.contains(ANSI_CODE_NUMBER), "{rendered:?}");
-        assert!(rendered.contains(ANSI_CODE_COMMENT), "{rendered:?}");
-        assert!(rendered.contains("let"));
-        assert!(rendered.contains("Some"));
-    }
-
-    #[test]
-    fn code_fence_strips_embedded_escape_sequences() {
-        let lines = rendered_message_lines_at_width(
-            &MessageRole::Assistant,
-            "```json\n{\"bad\":\"\u{1b}[31mred\"}\n```",
-            80,
-        );
-        let rendered = lines
-            .iter()
-            .map(|line| line.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        assert!(!rendered.contains("\u{1b}[31mred"), "{rendered:?}");
-        assert!(rendered.contains(ANSI_CODE_STRING), "{rendered:?}");
-    }
-
-    #[test]
-    fn assistant_markdown_can_be_indented() {
-        let mut lines = Vec::new();
-        push_markdown(
-            &mut lines,
-            "Summary below:\n\n📰 AI Weekly Digest\n\n#### 1. OpenAI",
-            "  ",
-            "  ",
-            80,
-        );
-
-        let visible = lines
-            .iter()
-            .filter(|line| !line.text.is_empty())
-            .collect::<Vec<_>>();
-        assert!(visible.iter().all(|line| line.text.starts_with("  ")));
-        assert!(visible.iter().all(|line| !line.text.contains("####")));
-    }
-
-    #[test]
-    fn assistant_continuation_does_not_add_leading_blank_line() {
-        let first =
-            rendered_message_lines_at_width(&MessageRole::Assistant, "First paragraph.\n\nSecond paragraph.", 80);
-        assert_eq!(first.first().map(|line| line.text.as_str()), Some(""));
-
-        let continuation =
-            rendered_message_lines_at_width(&MessageRole::AssistantContinuation, "Continuation output.", 80);
-        assert_ne!(
-            continuation.first().map(|line| line.text.as_str()),
-            Some("")
-        );
-    }
-
-    #[test]
-    fn blockquote_uses_assistant_indent() {
-        let mut lines = Vec::new();
-        push_markdown(&mut lines, "> ⚠️ Note:", "  ", "  ", 80);
-
-        assert_eq!(lines[0].text, "  ▎ ⚠️ Note:");
-    }
-
-    #[test]
-    fn markdown_symbol_width_matches_terminal_checkbox_use() {
-        assert_eq!(display_width("☐"), 2);
-        assert_eq!(display_width("✅"), 2);
-        assert_eq!(display_width("☑️"), 2);
-    }
-
-    #[test]
-    fn markdown_table_keeps_checkbox_status_column_aligned() {
-        let mut lines = Vec::new();
-        push_markdown(
-            &mut lines,
-            "Current home items:\n\n| # | Item | Status |\n|---|---|---|\n| 1 | Buy a door lock | ☐ |\n| 2 | Get driving license | ☐ |\n| 3 | Upload coai-code to GitHub | ☐ |",
-            "  ",
-            "  ",
-            44,
-        );
-
-        let rendered = lines
-            .iter()
-            .map(|line| line.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
-        let table_lines = lines
-            .iter()
-            .filter(|line| {
-                let trimmed = line.text.trim_start();
-                trimmed.starts_with('┌')
-                    || trimmed.starts_with('├')
-                    || trimmed.starts_with('└')
-                    || trimmed.starts_with('│')
-            })
-            .collect::<Vec<_>>();
-        let border_width = table_lines
-            .first()
-            .map(|line| display_width(&line.text))
-            .unwrap();
-
-        assert_eq!(rendered.matches('┌').count(), 1, "{rendered}");
-        assert_eq!(rendered.matches('└').count(), 1, "{rendered}");
-        assert!(rendered.contains("Status"), "{rendered}");
-        assert!(rendered.contains("☐"), "{rendered}");
-        assert!(table_lines
-            .iter()
-            .all(|line| display_width(&line.text) == border_width));
-        assert!(lines.iter().all(|line| display_width(&line.text) <= 44));
-    }
-
-    #[test]
-    fn truncated_cjk_table_cells_are_padded_to_column_width() {
-        assert_eq!(fit_table_cell("购买家里的门锁", 13), "购买家里的门 ");
-        assert_eq!(display_width(&fit_table_cell("购买家里的门锁", 13)), 13);
-    }
-
-    #[test]
-    fn markdown_table_renders_with_full_border_and_inline_formatting() {
-        let mut lines = Vec::new();
-        push_markdown(
-            &mut lines,
-            "| 关键词 | 趋势 |\n|---|---|\n| **Agent** | AI Agent 全面落地 |\n| **安全监管** | 英国 AISI 持续评测 |",
-            "  ",
-            "  ",
-            80,
-        );
-
-        assert!(lines.first().unwrap().text.starts_with("  ┌"));
-        assert!(lines.iter().any(|line| line.text.starts_with("  ├")));
-        assert!(lines.last().unwrap().text.starts_with("  └"));
-        assert!(lines.iter().any(|line| line.text.contains("Agent")));
-        assert!(lines.iter().all(|line| !line.text.contains("**")));
-    }
-
-    #[test]
-    fn markdown_table_joins_wrapped_continuation_rows() {
-        let rows = [
-            "| 关键词 | 趋势 |",
-            "|---|---|",
-            "| **Agent** | AI Agent 全面落地，Notion、Goo",
-            "gle 都在推进 |",
-            "| 小模型 | 蒸馏成为热点 |",
-        ];
-
-        let (table, end) = collect_markdown_table(&rows, 0).unwrap();
-        assert_eq!(end, rows.len());
-        assert!(table[2].contains("Google"));
-    }
-
-    #[test]
-    fn markdown_table_accepts_loose_separator_and_blank_wrapped_cells() {
-        let mut lines = Vec::new();
-        push_markdown(
-            &mut lines,
-            "一、模型与安全新进展\n\n| 新闻 | 要点 |\n------|------|\n| GPT-5.5 & Claude Mythos 安全测评 | 英国 AISI 评估显示，Anthropic Claude Mythos Preview 和\nOpenAI GPT-5.5 在网络安全测试中表现大幅超越此前趋势\n\n| Anthropic 企业客户首超 OpenAI | 据 Ramp 数据，Anthropic 的企业 |\n| Anthropic 未来愿景 | 高管 Cat Wu 表示，未来 AI 将能 |\n| Anthropic 进军小企业市场 | 推广\n\n产品，同时布局 AI 法律服务领域 |\n| 开源小模型：Needle | 开发者将 Gemini 的 Tool Calling 能力蒸馏到仅 26M 参数的模型中，获 Hac\nker News 640 点赞 |",
-            "  ",
-            "  ",
-            180,
-        );
-
-        let rendered = lines
-            .iter()
-            .map(|line| line.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        assert_eq!(rendered.matches("┌").count(), 1);
-        assert_eq!(rendered.matches("└").count(), 1);
-        assert!(rendered.contains("开源小模型：Needle"));
-        assert!(rendered.contains("产品，同时布局"));
-        assert!(!rendered.contains("| 开源小模型"), "{rendered}");
-        assert!(!rendered.contains("------|------"));
-    }
-
-    #[test]
-    fn markdown_table_repairs_split_separator_and_wrapped_query_rows() {
-        let mut lines = Vec::new();
-        let content = "**慢在哪：**\n\n| 因素 | 说明 |\n|------|\n------|\n| cube 数据量巨大 | error cube 按小时分片存储，每个应用每小时可能有成千上万条异常记录，\n全量可能百万级 |\n| `$in` 数组能有多大 | 一个活跃玩家可能有几千到几万个 session，$in 数组就是几千\n到几万个元素。MongoDB 对超大 $in 的处理效率很差，优化器可能直接放弃索引走全表扫描\n|\n| 跨分片 | cube 按时间分片（cube_coll_name 动态拼接），可能跨越几十上百个集合，每个\n都要扫一遍 |\n| `br` 二次过滤 | 先 $in 再 $in，过滤条件叠加但\n索引利用率低 |\n\n对比：语句 1 和语句 3 的差距\n\n| 查询 | 扫描量级 | 索引利用 |\n|------|----------|----------|\n| sessions 聚合 | ~10,000\n条（单应用内） | app_id 索引有效 |\n| error cube $in | 全量 error 记录（可能\n几十万到百万），因 $in 太大导致优化器放弃索引 | app_id + session_id 复合索引可能被绕过\n|";
-
-        push_markdown(&mut lines, content, "  ", "  ", 96);
-
-        let rendered = lines
-            .iter()
-            .map(|line| line.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        assert!(rendered.contains("cube 数据量巨大"), "{rendered}");
-        assert!(rendered.contains("全量可能百万级"), "{rendered}");
-        assert!(rendered.contains("sessions 聚合"), "{rendered}");
-        assert!(rendered.contains("~10,000条"), "{rendered}");
-        assert!(rendered.contains("app_id 索引有效"), "{rendered}");
-        assert_eq!(rendered.matches("error cube $in").count(), 1, "{rendered}");
-        assert!(!rendered.contains("|------|"), "{rendered}");
-        assert!(!rendered.contains("------|"), "{rendered}");
-        assert!(!rendered.contains("┌"), "{rendered}");
-    }
-
-    #[test]
-    fn markdown_table_repairs_fragmented_long_news_table() {
-        let mut lines = Vec::new();
-        push_markdown(
-            &mut lines,
-            "| 序号 | 类别 | 新闻标题 | 要点 |\n|:\n| 1 | 🔐 AI安全与测试 | 英国AISI发布AI网络安全测试结果 | Claude Mythos Preview、GPT-5.5 |\n| 2 | 🏢 行业竞争格局 | Anthropic 商业客户数超越 OpenA | 企业客户数反超 OpenAI，并拓展 |\n| 3 | 🏢 行业竞争格局 | Anthropic 警告投资者警惕二级市 | 提醒注意 |\n\n在二级交易平台购买其股份的风险 |\n|  | 🏢 行业竞争格局 | x 数据中心引发环境争议 | 密西西比州数据中心近50台无控制燃气轮机 |\n| 6 | 🛍️ 科技巨头产品更新 | Microsoft Edge Copilot 重大更新 | 新增AI播客、摘要和测验功能，\n支持多标签页信息提取 |\n| 7 | 🛍️ **科技\n\n巨头产品更新** | Meta AI 推出\"完全私密\"加密聊天 | \"隐身处\"模式：离开聊天后消息自动消失 |\n|10 | 🛍️ 科技巨头产品更新 | Google Android Show 大动作 | Gemini 加持 G\n\n|10 | 🛍️ 科技巨头产品更新 | Google Android Show 大动作 | Gemini 加持 G\n\nboard、「Create My Widget」自然语言创建小部件、系统级Agent增强 |\n| 14 | 💡\n\n创业与融资 | Origin Lab 获800万美元融资 | 帮助游戏公司向世界模型构建者销售数据 |\n| 15 💡 创业与投 | Dessn 获600万美元融资 | 面向生产的AI设计工具 |\n| 18 | ⚖️ 法律与监管 | 马斯克 vs\n\n奥特曼：法庭交锋持续 | 马斯克称曾考虑将 OpenAI 交给自己的孩子管理 |",
-            "  ",
-            "  ",
-            220,
-        );
-
-        let rendered = lines
-            .iter()
-            .map(|line| line.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        assert_eq!(rendered.matches("┌").count(), 1, "{rendered}");
-        assert_eq!(rendered.matches("└").count(), 1, "{rendered}");
-        assert_eq!(rendered.matches("Google Android Show").count(), 1);
-        assert!(rendered.contains("在二级交易平台"));
-        assert!(rendered.contains("巨头产品更新"));
-        assert!(rendered.contains("board"));
-        assert!(rendered.contains("Dessn"));
-        assert!(!rendered.contains("|10"), "{rendered}");
-        assert!(!rendered.contains("**科技"), "{rendered}");
-    }
-
-    #[test]
-    fn markdown_table_merges_amount_and_description_fragments() {
-        let mut lines = Vec::new();
-        push_markdown(
-            &mut lines,
-            "💰 投融资\n\n| 公司/项目 | 金额 | 说明 |\n|---|---|---|\n| Vapi (AI语音) | $5亿估值 | 击败40+竞争对手拿下Amazon Ring |\n| Origin Lab | $800 |\n\n万 | 帮游戏公司将数据卖给\"世界模型\"构建者 |\n| Dessn | $600万 | AI生产级设计工具 |\n| Adaption (AutoScientist) | 未披露 | AI工具让模型学会自我训练 |\n| Poppy | 未披露 | 主动式AI助手，帮你整理数字生活 |",
-            "  ",
-            "  ",
-            160,
-        );
-
-        let rendered = lines
-            .iter()
-            .map(|line| line.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        assert_eq!(rendered.matches("┌").count(), 1, "{rendered}");
-        assert_eq!(rendered.matches("└").count(), 1, "{rendered}");
-        assert!(rendered.contains("$800万"), "{rendered}");
-        assert!(rendered.contains("帮游戏公司将数据卖给"));
-        assert!(rendered.contains("Dessn"));
-        assert!(!rendered.contains("万 | 帮游戏"), "{rendered}");
-        assert!(!rendered.contains("| Dessn"), "{rendered}");
-    }
-
-    #[test]
-    fn markdown_table_keeps_missing_left_border_row_separate() {
-        let mut lines = Vec::new();
-        push_markdown(
-            &mut lines,
-            "💰 投融资 & 市场\n\n| 公司 | 动态 |\n|---|---|\n| AI语音公司 Vapi | 估值达 5亿美元，从40多家竞品中 |\n| Origin Lab | 融资 800万美元，帮游戏公司卖数 |\n| CoreWeave | 股价暴跌，算力泡沫风险信号 |\n\n**Cerebras** | 紧急申请IPO |\n| xAI（马斯克） | 在密西西比数据中心部署近 50台燃气轮机不受监管 |",
-            "  ",
-            "  ",
-            160,
-        );
-
-        let rendered = lines
-            .iter()
-            .map(|line| line.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        assert_eq!(rendered.matches("┌").count(), 1, "{rendered}");
-        assert_eq!(rendered.matches("└").count(), 1, "{rendered}");
-        assert!(rendered.contains("CoreWeave"));
-        assert!(rendered.contains("Cerebras"));
-        assert!(rendered.contains("紧急申请IPO"));
-        assert!(rendered.contains("xAI"));
-        assert!(!rendered.contains("**Ce"), "{rendered}");
-        assert!(!rendered.contains("** | 紧急"), "{rendered}");
-    }
-
-    #[test]
-    fn markdown_table_repairs_split_header_and_rows() {
-        let mut lines = Vec::new();
-        let content = "📋 工单列表（按更新时间倒序）\n\n| # | ID | 标题 | 状态 | 优先级 |\n\n负责人 | 创建时间 |\n|---|-----|------|------|--------|--------|----------|\n| 1 | …1001 | 登录\n\n超时 | 待测试 | 🔴 high | alice | 05-13 |\n| 2 | …1002 | 筛选器不显示已设维度值\n\n| 待测试 | 🟡 medium | alice | 05-14 |\n| 8 | …1008 | 报告缺少截图与堆栈数据 | To Do | 🔴 high | bob\n\n.chen | 05-13 |";
-        assert!(contains_markdown_table(content));
-        push_markdown(&mut lines, content, "  ", "  ", 96);
-
-        let rendered = lines
-            .iter()
-            .map(|line| line.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        assert_eq!(rendered.matches("┌").count(), 1, "{rendered}");
-        assert_eq!(rendered.matches("└").count(), 1, "{rendered}");
-        assert!(rendered.contains("创建时间"), "{rendered}");
-        assert!(rendered.contains("登录超时"), "{rendered}");
-        assert!(rendered.contains("bob.chen"), "{rendered}");
-        assert!(!rendered.contains("| # |"), "{rendered}");
-    }
-
-    #[test]
-    fn wide_markdown_table_degrades_to_field_records() {
-        let mut lines = Vec::new();
-        let content = "更好的方案：分而治之\n\n| 统计项 | 数据来源 | 查询方式 | 性能 |\n|--------|----------|\n----------|------|\n| 报告时长总计 | sessions | 直接 $group + $sum，1 次 aggregation |\n⚡ 秒级 |\n| 性能异常报告数 | exception_report_summary | 直接按 user_id 聚合，**\n不需要 session_ids** | ⚡ 秒级 |\n| 崩溃/ANR 报告数 | error cube | 必须先拿到 session_ids\n| 🐌 需要优化 |";
-
-        push_markdown(&mut lines, content, "  ", "  ", 78);
-
-        let rendered = lines
-            .iter()
-            .map(|line| line.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        assert!(rendered.contains("• 统计项: 报告时长总计"), "{rendered}");
-        assert!(rendered.contains("数据来源: sessions"), "{rendered}");
-        assert!(
-            rendered.contains("查询方式: 直接 $group + $sum"),
-            "{rendered}"
-        );
-        assert!(rendered.contains("性能: ⚡ 秒级"), "{rendered}");
-        assert!(rendered.contains("不需要 session_ids"), "{rendered}");
-        assert!(rendered.contains("崩溃/ANR 报告数"), "{rendered}");
-        assert!(!rendered.contains("| 统计项 |"), "{rendered}");
-        assert!(lines.iter().all(|line| display_width(&line.text) <= 78));
-    }
-
-    #[test]
-    fn markdown_table_repairs_hot_news_snapshot_fragments() {
-        let mut lines = Vec::new();
-        let content = "### 📊 今日热点速览\n\n| 热度 | 趋势主题 | 说明 |\n|---|---|---|\n| 🔥🔥🔥\n🔥🔥🔥 | AI + 娱乐/内容创作\n**AI巨头财报与盈利\n** | Nvidia再创纪录、Anthropic将盈利、xAI巨亏--AI赛道分化加剧 |\n| 🔥🔥 | AI搜索可靠性争议 | Google AI搜索曝出低级故障，“幻觉”问题持续引发关注 |\n| 🔥🔥 | AI硬件落地 | Google AI眼镜接近成熟，AR+AI融合进展明显 |\n| 🔥 | AI政策与监管 | 特朗普推迟AI安全令，监管走向仍存变数 |\n\n> 数据来源：TechCrunch AI频道、The Verge AI频道 | 更新时间：今日";
-
-        push_markdown(&mut lines, content, "  ", "  ", 78);
-
-        let rendered = lines
-            .iter()
-            .map(|line| line.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        assert!(rendered.contains("Nvidia再创纪录"), "{rendered}");
-        assert!(rendered.contains("AI搜索可靠性争议"), "{rendered}");
-        assert!(rendered.contains("• 热度:"), "{rendered}");
-        assert!(!rendered.contains("| Nvidia"), "{rendered}");
-        assert!(!rendered.contains("** | Nvidia"), "{rendered}");
-        assert!(!rendered.contains("** |"), "{rendered}");
-        assert!(!rendered.contains("| 🔥🔥"), "{rendered}");
-        assert!(!rendered.contains("| AI搜索"), "{rendered}");
-        assert!(!rendered.contains("**AI"), "{rendered}");
-        assert!(lines.iter().all(|line| display_width(&line.text) <= 78));
-    }
-
-    #[test]
-    fn permission_command_wraps_without_terminal_autowrap() {
-        let req = super::super::state::PermissionRequest {
-            tool: "exec.run".to_string(),
-            path: "cd /tmp/example/project && python3 scripts/dump_status.py fields 2>&1 | python3 -c \"\nimport sys,json\nd=json.load(sys.stdin)\nif d.get('status')==1:\n    opts = d['data'].get('status',{}).get('options',{})\n    for k,v in opts.items(): print(f'  {k} -> {v}')\nelse:\n    print('failed to fetch fields:', d)\"".to_string(),
-            description:
-                "shell command can read, write, spawn processes, or access network".to_string(),
-            risk_level: "dangerous".to_string(),
-            scope: "shell".to_string(),
-            cwd: "/tmp/example/project".to_string(),
-            details: vec![
-                "shell command can read, write, spawn processes, or access network".to_string(),
-            ],
-        };
-
-        let width = 82;
-        let lines = permission_lines(&req, 0, width, 20);
-        let rendered = lines.join("\n");
-
-        assert!(rendered.contains("Do you want to proceed?"));
-        assert!(rendered.contains("❯ 1. Yes"));
-        assert!(rendered.contains("Always allow this command"));
-        assert!(rendered.contains("lines hidden"));
-        assert!(lines.iter().all(|line| !line.contains('\n')));
-        assert!(lines.iter().all(|line| display_width(line) <= width));
-    }
-
-    #[test]
-    fn elapsed_time_uses_minutes_after_sixty_seconds() {
-        assert_eq!(format_elapsed(59), "59s");
-        assert_eq!(format_elapsed(60), "1m 0s");
-        assert_eq!(format_elapsed(226), "3m 46s");
-    }
-}
-
 const SPIN_CHARS: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 /// Draw the input area using absolute row positioning and print_styled_here
 /// (no `\n`) to avoid triggering terminal scrolling.
+#[allow(dead_code)]
 fn draw_input_area(term: &mut Terminal, state: &AppState) -> std::io::Result<()> {
     let (tw, term_h) = term.size()?;
     let ih = input_height(term, state);
@@ -2723,6 +2206,7 @@ fn draw_input_area(term: &mut Terminal, state: &AppState) -> std::io::Result<()>
     Ok(())
 }
 
+#[allow(dead_code)]
 fn position_cursor(term: &mut Terminal, state: &AppState) -> std::io::Result<()> {
     if state.pending_permission.is_some() || state.expanded_output.is_some() {
         term.hide_cursor()?;
@@ -2758,7 +2242,10 @@ fn running_status(state: &AppState) -> String {
             tool.detail.clone()
         }
     } else if state.pending_live_context_count > 0 {
-        format!("Waiting for model to read {} new input(s)", state.pending_live_context_count)
+        format!(
+            "Waiting for model to read {} new input(s)",
+            state.pending_live_context_count
+        )
     } else if !state.current_response.is_empty() || state.streamed_response_seen {
         "Generating response".to_string()
     } else if state.reasoning_chars > 0 {
@@ -2805,6 +2292,7 @@ fn compact_count(count: usize) -> String {
     }
 }
 
+#[allow(dead_code)]
 fn has_live_thinking_preview(state: &AppState) -> bool {
     state.mode == UiMode::Running
         && state.reasoning_chars > 0
@@ -2813,6 +2301,7 @@ fn has_live_thinking_preview(state: &AppState) -> bool {
         && !state.streamed_response_seen
 }
 
+#[allow(dead_code)]
 fn current_thinking_preview_chars(state: &AppState) -> usize {
     if has_live_thinking_preview(state) {
         state.reasoning_chars
@@ -2821,6 +2310,7 @@ fn current_thinking_preview_chars(state: &AppState) -> usize {
     }
 }
 
+#[allow(dead_code)]
 fn live_thinking_preview_lines(term: &Terminal, state: &AppState) -> Vec<RenderHistoryLine> {
     if !has_live_thinking_preview(state) {
         return Vec::new();
@@ -3230,4 +2720,531 @@ fn status_line(left: &str, right: &str, width: usize) -> String {
         );
     }
     format!("{}{}{}", left, " ".repeat(width - left_w - right_w), right)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn markdown_headings_wrap_as_separate_render_lines() {
+        let mut lines = Vec::new();
+        push_markdown(
+            &mut lines,
+            "# This is a very long heading used to test wrapping behavior",
+            "",
+            "",
+            12,
+        );
+
+        assert!(lines.len() > 1);
+        assert!(lines.iter().all(|line| !line.text.contains('\n')));
+        assert!(lines.iter().all(|line| line.bold));
+    }
+
+    #[test]
+    fn inline_markdown_strips_markers() {
+        assert_eq!(format_inline_md("run `cargo test`"), "run cargo test");
+        assert_eq!(
+            format_inline_md("this is **important** and *italic*"),
+            "this is important and italic"
+        );
+        assert_eq!(
+            format_inline_md("see [docs](https://example.com)"),
+            "see docs"
+        );
+    }
+
+    #[test]
+    fn tool_child_continuation_aligns_with_tool_name() {
+        let lines = wrap_prefixed_text(
+            "abcdefghijklmnopqrstuvwxyz",
+            TOOL_CHILD_PREFIX,
+            TOOL_CHILD_CONTINUATION,
+            12,
+        );
+
+        assert!(lines[0].starts_with("  ⎿ "));
+        assert!(lines.iter().skip(1).all(|line| line.starts_with("    ")));
+    }
+
+    #[test]
+    fn markdown_h4_heading_strips_marker() {
+        let mut lines = Vec::new();
+        push_markdown(&mut lines, "#### 1. OpenAI releases GPT-5.5", "", "", 80);
+
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0].text, "1. OpenAI releases GPT-5.5");
+        assert!(lines[0].bold);
+    }
+
+    #[test]
+    fn tool_markdown_lists_keep_tool_child_prefix() {
+        let lines = rendered_message_lines_at_width(
+            &MessageRole::ToolResult,
+            "- first item with a very long content string here\n1. second item",
+            30,
+        );
+
+        let visible = lines
+            .iter()
+            .filter(|line| !line.text.trim().is_empty())
+            .collect::<Vec<_>>();
+        assert!(visible
+            .iter()
+            .any(|line| line.text.starts_with("  ⎿ • first")));
+        assert!(visible
+            .iter()
+            .any(|line| line.text.starts_with("  ⎿ 1. second")));
+        assert!(!visible.iter().any(|line| line.text.starts_with("  • ")));
+        assert!(!visible.iter().any(|line| line.text.starts_with("  1. ")));
+    }
+
+    #[test]
+    fn code_fence_keeps_assistant_indent() {
+        let lines = rendered_message_lines_at_width(
+            &MessageRole::Assistant,
+            "```rust\nfn main() {}\n```",
+            40,
+        );
+
+        let visible = lines
+            .iter()
+            .filter(|line| !line.text.trim().is_empty())
+            .collect::<Vec<_>>();
+        assert!(visible.iter().all(|line| line.text.starts_with("  ")));
+        assert!(visible[0].text.contains("rust"));
+    }
+
+    #[test]
+    fn code_fence_uses_bordered_block_style() {
+        let lines = rendered_message_lines_at_width(
+            &MessageRole::Assistant,
+            "```rust\nlet value = 42;\n```",
+            48,
+        );
+
+        let visible = lines
+            .iter()
+            .filter(|line| !line.text.trim().is_empty())
+            .collect::<Vec<_>>();
+
+        assert!(
+            visible[0].text.starts_with("  ┌ rust "),
+            "{:?}",
+            visible[0].text
+        );
+        assert!(visible
+            .iter()
+            .any(|line| line.text.starts_with("  │ ") && line.text.contains("value")));
+        assert!(visible.last().unwrap().text.starts_with("  └"));
+    }
+
+    #[test]
+    fn code_fence_highlights_rust_keywords() {
+        let lines = rendered_message_lines_at_width(
+            &MessageRole::Assistant,
+            "```rust\nlet value = Some(42);\n// comment\n```",
+            80,
+        );
+
+        let rendered = lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(rendered.contains(ANSI_CODE_KEYWORD), "{rendered:?}");
+        assert!(rendered.contains(ANSI_CODE_NUMBER), "{rendered:?}");
+        assert!(rendered.contains(ANSI_CODE_COMMENT), "{rendered:?}");
+        assert!(rendered.contains("let"));
+        assert!(rendered.contains("Some"));
+    }
+
+    #[test]
+    fn code_fence_strips_embedded_escape_sequences() {
+        let lines = rendered_message_lines_at_width(
+            &MessageRole::Assistant,
+            "```json\n{\"bad\":\"\u{1b}[31mred\"}\n```",
+            80,
+        );
+        let rendered = lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(!rendered.contains("\u{1b}[31mred"), "{rendered:?}");
+        assert!(rendered.contains(ANSI_CODE_STRING), "{rendered:?}");
+    }
+
+    #[test]
+    fn assistant_markdown_can_be_indented() {
+        let mut lines = Vec::new();
+        push_markdown(
+            &mut lines,
+            "Summary below:\n\n📰 AI Weekly Digest\n\n#### 1. OpenAI",
+            "  ",
+            "  ",
+            80,
+        );
+
+        let visible = lines
+            .iter()
+            .filter(|line| !line.text.is_empty())
+            .collect::<Vec<_>>();
+        assert!(visible.iter().all(|line| line.text.starts_with("  ")));
+        assert!(visible.iter().all(|line| !line.text.contains("####")));
+    }
+
+    #[test]
+    fn assistant_continuation_does_not_add_leading_blank_line() {
+        let first = rendered_message_lines_at_width(
+            &MessageRole::Assistant,
+            "First paragraph.\n\nSecond paragraph.",
+            80,
+        );
+        assert_eq!(first.first().map(|line| line.text.as_str()), Some(""));
+
+        let continuation = rendered_message_lines_at_width(
+            &MessageRole::AssistantContinuation,
+            "Continuation output.",
+            80,
+        );
+        assert_ne!(
+            continuation.first().map(|line| line.text.as_str()),
+            Some("")
+        );
+    }
+
+    #[test]
+    fn blockquote_uses_assistant_indent() {
+        let mut lines = Vec::new();
+        push_markdown(&mut lines, "> ⚠️ Note:", "  ", "  ", 80);
+
+        assert_eq!(lines[0].text, "  ▎ ⚠️ Note:");
+    }
+
+    #[test]
+    fn markdown_symbol_width_matches_terminal_checkbox_use() {
+        assert_eq!(display_width("☐"), 2);
+        assert_eq!(display_width("✅"), 2);
+        assert_eq!(display_width("☑️"), 2);
+    }
+
+    #[test]
+    fn markdown_table_keeps_checkbox_status_column_aligned() {
+        let mut lines = Vec::new();
+        push_markdown(
+            &mut lines,
+            "Current home items:\n\n| # | Item | Status |\n|---|---|---|\n| 1 | Buy a door lock | ☐ |\n| 2 | Get driving license | ☐ |\n| 3 | Upload coai-code to GitHub | ☐ |",
+            "  ",
+            "  ",
+            44,
+        );
+
+        let rendered = lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+        let table_lines = lines
+            .iter()
+            .filter(|line| {
+                let trimmed = line.text.trim_start();
+                trimmed.starts_with('┌')
+                    || trimmed.starts_with('├')
+                    || trimmed.starts_with('└')
+                    || trimmed.starts_with('│')
+            })
+            .collect::<Vec<_>>();
+        let border_width = table_lines
+            .first()
+            .map(|line| display_width(&line.text))
+            .unwrap();
+
+        assert_eq!(rendered.matches('┌').count(), 1, "{rendered}");
+        assert_eq!(rendered.matches('└').count(), 1, "{rendered}");
+        assert!(rendered.contains("Status"), "{rendered}");
+        assert!(rendered.contains("☐"), "{rendered}");
+        assert!(table_lines
+            .iter()
+            .all(|line| display_width(&line.text) == border_width));
+        assert!(lines.iter().all(|line| display_width(&line.text) <= 44));
+    }
+
+    #[test]
+    fn truncated_cjk_table_cells_are_padded_to_column_width() {
+        assert_eq!(fit_table_cell("购买家里的门锁", 13), "购买家里的门 ");
+        assert_eq!(display_width(&fit_table_cell("购买家里的门锁", 13)), 13);
+    }
+
+    #[test]
+    fn markdown_table_renders_with_full_border_and_inline_formatting() {
+        let mut lines = Vec::new();
+        push_markdown(
+            &mut lines,
+            "| 关键词 | 趋势 |\n|---|---|\n| **Agent** | AI Agent 全面落地 |\n| **安全监管** | 英国 AISI 持续评测 |",
+            "  ",
+            "  ",
+            80,
+        );
+
+        assert!(lines.first().unwrap().text.starts_with("  ┌"));
+        assert!(lines.iter().any(|line| line.text.starts_with("  ├")));
+        assert!(lines.last().unwrap().text.starts_with("  └"));
+        assert!(lines.iter().any(|line| line.text.contains("Agent")));
+        assert!(lines.iter().all(|line| !line.text.contains("**")));
+    }
+
+    #[test]
+    fn markdown_table_joins_wrapped_continuation_rows() {
+        let rows = [
+            "| 关键词 | 趋势 |",
+            "|---|---|",
+            "| **Agent** | AI Agent 全面落地，Notion、Goo",
+            "gle 都在推进 |",
+            "| 小模型 | 蒸馏成为热点 |",
+        ];
+
+        let (table, end) = collect_markdown_table(&rows, 0).unwrap();
+        assert_eq!(end, rows.len());
+        assert!(table[2].contains("Google"));
+    }
+
+    #[test]
+    fn markdown_table_accepts_loose_separator_and_blank_wrapped_cells() {
+        let mut lines = Vec::new();
+        push_markdown(
+            &mut lines,
+            "一、模型与安全新进展\n\n| 新闻 | 要点 |\n------|------|\n| GPT-5.5 & Claude Mythos 安全测评 | 英国 AISI 评估显示，Anthropic Claude Mythos Preview 和\nOpenAI GPT-5.5 在网络安全测试中表现大幅超越此前趋势\n\n| Anthropic 企业客户首超 OpenAI | 据 Ramp 数据，Anthropic 的企业 |\n| Anthropic 未来愿景 | 高管 Cat Wu 表示，未来 AI 将能 |\n| Anthropic 进军小企业市场 | 推广\n\n产品，同时布局 AI 法律服务领域 |\n| 开源小模型：Needle | 开发者将 Gemini 的 Tool Calling 能力蒸馏到仅 26M 参数的模型中，获 Hac\nker News 640 点赞 |",
+            "  ",
+            "  ",
+            180,
+        );
+
+        let rendered = lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert_eq!(rendered.matches("┌").count(), 1);
+        assert_eq!(rendered.matches("└").count(), 1);
+        assert!(rendered.contains("开源小模型：Needle"));
+        assert!(rendered.contains("产品，同时布局"));
+        assert!(!rendered.contains("| 开源小模型"), "{rendered}");
+        assert!(!rendered.contains("------|------"));
+    }
+
+    #[test]
+    fn markdown_table_repairs_split_separator_and_wrapped_query_rows() {
+        let mut lines = Vec::new();
+        let content = "**慢在哪：**\n\n| 因素 | 说明 |\n|------|\n------|\n| cube 数据量巨大 | error cube 按小时分片存储，每个应用每小时可能有成千上万条异常记录，\n全量可能百万级 |\n| `$in` 数组能有多大 | 一个活跃玩家可能有几千到几万个 session，$in 数组就是几千\n到几万个元素。MongoDB 对超大 $in 的处理效率很差，优化器可能直接放弃索引走全表扫描\n|\n| 跨分片 | cube 按时间分片（cube_coll_name 动态拼接），可能跨越几十上百个集合，每个\n都要扫一遍 |\n| `br` 二次过滤 | 先 $in 再 $in，过滤条件叠加但\n索引利用率低 |\n\n对比：语句 1 和语句 3 的差距\n\n| 查询 | 扫描量级 | 索引利用 |\n|------|----------|----------|\n| sessions 聚合 | ~10,000\n条（单应用内） | app_id 索引有效 |\n| error cube $in | 全量 error 记录（可能\n几十万到百万），因 $in 太大导致优化器放弃索引 | app_id + session_id 复合索引可能被绕过\n|";
+
+        push_markdown(&mut lines, content, "  ", "  ", 96);
+
+        let rendered = lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(rendered.contains("cube 数据量巨大"), "{rendered}");
+        assert!(rendered.contains("全量可能百万级"), "{rendered}");
+        assert!(rendered.contains("sessions 聚合"), "{rendered}");
+        assert!(rendered.contains("~10,000条"), "{rendered}");
+        assert!(rendered.contains("app_id 索引有效"), "{rendered}");
+        assert_eq!(rendered.matches("error cube $in").count(), 1, "{rendered}");
+        assert!(!rendered.contains("|------|"), "{rendered}");
+        assert!(!rendered.contains("------|"), "{rendered}");
+        assert!(!rendered.contains("┌"), "{rendered}");
+    }
+
+    #[test]
+    fn markdown_table_repairs_fragmented_long_news_table() {
+        let mut lines = Vec::new();
+        push_markdown(
+            &mut lines,
+            "| 序号 | 类别 | 新闻标题 | 要点 |\n|:\n| 1 | 🔐 AI安全与测试 | 英国AISI发布AI网络安全测试结果 | Claude Mythos Preview、GPT-5.5 |\n| 2 | 🏢 行业竞争格局 | Anthropic 商业客户数超越 OpenA | 企业客户数反超 OpenAI，并拓展 |\n| 3 | 🏢 行业竞争格局 | Anthropic 警告投资者警惕二级市 | 提醒注意 |\n\n在二级交易平台购买其股份的风险 |\n|  | 🏢 行业竞争格局 | x 数据中心引发环境争议 | 密西西比州数据中心近50台无控制燃气轮机 |\n| 6 | 🛍️ 科技巨头产品更新 | Microsoft Edge Copilot 重大更新 | 新增AI播客、摘要和测验功能，\n支持多标签页信息提取 |\n| 7 | 🛍️ **科技\n\n巨头产品更新** | Meta AI 推出\"完全私密\"加密聊天 | \"隐身处\"模式：离开聊天后消息自动消失 |\n|10 | 🛍️ 科技巨头产品更新 | Google Android Show 大动作 | Gemini 加持 G\n\n|10 | 🛍️ 科技巨头产品更新 | Google Android Show 大动作 | Gemini 加持 G\n\nboard、「Create My Widget」自然语言创建小部件、系统级Agent增强 |\n| 14 | 💡\n\n创业与融资 | Origin Lab 获800万美元融资 | 帮助游戏公司向世界模型构建者销售数据 |\n| 15 💡 创业与投 | Dessn 获600万美元融资 | 面向生产的AI设计工具 |\n| 18 | ⚖️ 法律与监管 | 马斯克 vs\n\n奥特曼：法庭交锋持续 | 马斯克称曾考虑将 OpenAI 交给自己的孩子管理 |",
+            "  ",
+            "  ",
+            220,
+        );
+
+        let rendered = lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert_eq!(rendered.matches("┌").count(), 1, "{rendered}");
+        assert_eq!(rendered.matches("└").count(), 1, "{rendered}");
+        assert_eq!(rendered.matches("Google Android Show").count(), 1);
+        assert!(rendered.contains("在二级交易平台"));
+        assert!(rendered.contains("巨头产品更新"));
+        assert!(rendered.contains("board"));
+        assert!(rendered.contains("Dessn"));
+        assert!(!rendered.contains("|10"), "{rendered}");
+        assert!(!rendered.contains("**科技"), "{rendered}");
+    }
+
+    #[test]
+    fn markdown_table_merges_amount_and_description_fragments() {
+        let mut lines = Vec::new();
+        push_markdown(
+            &mut lines,
+            "💰 投融资\n\n| 公司/项目 | 金额 | 说明 |\n|---|---|---|\n| Vapi (AI语音) | $5亿估值 | 击败40+竞争对手拿下Amazon Ring |\n| Origin Lab | $800 |\n\n万 | 帮游戏公司将数据卖给\"世界模型\"构建者 |\n| Dessn | $600万 | AI生产级设计工具 |\n| Adaption (AutoScientist) | 未披露 | AI工具让模型学会自我训练 |\n| Poppy | 未披露 | 主动式AI助手，帮你整理数字生活 |",
+            "  ",
+            "  ",
+            160,
+        );
+
+        let rendered = lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert_eq!(rendered.matches("┌").count(), 1, "{rendered}");
+        assert_eq!(rendered.matches("└").count(), 1, "{rendered}");
+        assert!(rendered.contains("$800万"), "{rendered}");
+        assert!(rendered.contains("帮游戏公司将数据卖给"));
+        assert!(rendered.contains("Dessn"));
+        assert!(!rendered.contains("万 | 帮游戏"), "{rendered}");
+        assert!(!rendered.contains("| Dessn"), "{rendered}");
+    }
+
+    #[test]
+    fn markdown_table_keeps_missing_left_border_row_separate() {
+        let mut lines = Vec::new();
+        push_markdown(
+            &mut lines,
+            "💰 投融资 & 市场\n\n| 公司 | 动态 |\n|---|---|\n| AI语音公司 Vapi | 估值达 5亿美元，从40多家竞品中 |\n| Origin Lab | 融资 800万美元，帮游戏公司卖数 |\n| CoreWeave | 股价暴跌，算力泡沫风险信号 |\n\n**Cerebras** | 紧急申请IPO |\n| xAI（马斯克） | 在密西西比数据中心部署近 50台燃气轮机不受监管 |",
+            "  ",
+            "  ",
+            160,
+        );
+
+        let rendered = lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert_eq!(rendered.matches("┌").count(), 1, "{rendered}");
+        assert_eq!(rendered.matches("└").count(), 1, "{rendered}");
+        assert!(rendered.contains("CoreWeave"));
+        assert!(rendered.contains("Cerebras"));
+        assert!(rendered.contains("紧急申请IPO"));
+        assert!(rendered.contains("xAI"));
+        assert!(!rendered.contains("**Ce"), "{rendered}");
+        assert!(!rendered.contains("** | 紧急"), "{rendered}");
+    }
+
+    #[test]
+    fn markdown_table_repairs_split_header_and_rows() {
+        let mut lines = Vec::new();
+        let content = "📋 工单列表（按更新时间倒序）\n\n| # | ID | 标题 | 状态 | 优先级 |\n\n负责人 | 创建时间 |\n|---|-----|------|------|--------|--------|----------|\n| 1 | …1001 | 登录\n\n超时 | 待测试 | 🔴 high | alice | 05-13 |\n| 2 | …1002 | 筛选器不显示已设维度值\n\n| 待测试 | 🟡 medium | alice | 05-14 |\n| 8 | …1008 | 报告缺少截图与堆栈数据 | To Do | 🔴 high | bob\n\n.chen | 05-13 |";
+        assert!(contains_markdown_table(content));
+        push_markdown(&mut lines, content, "  ", "  ", 96);
+
+        let rendered = lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert_eq!(rendered.matches("┌").count(), 1, "{rendered}");
+        assert_eq!(rendered.matches("└").count(), 1, "{rendered}");
+        assert!(rendered.contains("创建时间"), "{rendered}");
+        assert!(rendered.contains("登录超时"), "{rendered}");
+        assert!(rendered.contains("bob.chen"), "{rendered}");
+        assert!(!rendered.contains("| # |"), "{rendered}");
+    }
+
+    #[test]
+    fn wide_markdown_table_degrades_to_field_records() {
+        let mut lines = Vec::new();
+        let content = "更好的方案：分而治之\n\n| 统计项 | 数据来源 | 查询方式 | 性能 |\n|--------|----------|\n----------|------|\n| 报告时长总计 | sessions | 直接 $group + $sum，1 次 aggregation |\n⚡ 秒级 |\n| 性能异常报告数 | exception_report_summary | 直接按 user_id 聚合，**\n不需要 session_ids** | ⚡ 秒级 |\n| 崩溃/ANR 报告数 | error cube | 必须先拿到 session_ids\n| 🐌 需要优化 |";
+
+        push_markdown(&mut lines, content, "  ", "  ", 78);
+
+        let rendered = lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(rendered.contains("• 统计项: 报告时长总计"), "{rendered}");
+        assert!(rendered.contains("数据来源: sessions"), "{rendered}");
+        assert!(
+            rendered.contains("查询方式: 直接 $group + $sum"),
+            "{rendered}"
+        );
+        assert!(rendered.contains("性能: ⚡ 秒级"), "{rendered}");
+        assert!(rendered.contains("不需要 session_ids"), "{rendered}");
+        assert!(rendered.contains("崩溃/ANR 报告数"), "{rendered}");
+        assert!(!rendered.contains("| 统计项 |"), "{rendered}");
+        assert!(lines.iter().all(|line| display_width(&line.text) <= 78));
+    }
+
+    #[test]
+    fn markdown_table_repairs_hot_news_snapshot_fragments() {
+        let mut lines = Vec::new();
+        let content = "### 📊 今日热点速览\n\n| 热度 | 趋势主题 | 说明 |\n|---|---|---|\n| 🔥🔥🔥\n🔥🔥🔥 | AI + 娱乐/内容创作\n**AI巨头财报与盈利\n** | Nvidia再创纪录、Anthropic将盈利、xAI巨亏--AI赛道分化加剧 |\n| 🔥🔥 | AI搜索可靠性争议 | Google AI搜索曝出低级故障，“幻觉”问题持续引发关注 |\n| 🔥🔥 | AI硬件落地 | Google AI眼镜接近成熟，AR+AI融合进展明显 |\n| 🔥 | AI政策与监管 | 特朗普推迟AI安全令，监管走向仍存变数 |\n\n> 数据来源：TechCrunch AI频道、The Verge AI频道 | 更新时间：今日";
+
+        push_markdown(&mut lines, content, "  ", "  ", 78);
+
+        let rendered = lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(rendered.contains("Nvidia再创纪录"), "{rendered}");
+        assert!(rendered.contains("AI搜索可靠性争议"), "{rendered}");
+        assert!(rendered.contains("• 热度:"), "{rendered}");
+        assert!(!rendered.contains("| Nvidia"), "{rendered}");
+        assert!(!rendered.contains("** | Nvidia"), "{rendered}");
+        assert!(!rendered.contains("** |"), "{rendered}");
+        assert!(!rendered.contains("| 🔥🔥"), "{rendered}");
+        assert!(!rendered.contains("| AI搜索"), "{rendered}");
+        assert!(!rendered.contains("**AI"), "{rendered}");
+        assert!(lines.iter().all(|line| display_width(&line.text) <= 78));
+    }
+
+    #[test]
+    fn permission_command_wraps_without_terminal_autowrap() {
+        let req = super::super::state::PermissionRequest {
+            tool: "exec.run".to_string(),
+            path: "cd /tmp/example/project && python3 scripts/dump_status.py fields 2>&1 | python3 -c \"\nimport sys,json\nd=json.load(sys.stdin)\nif d.get('status')==1:\n    opts = d['data'].get('status',{}).get('options',{})\n    for k,v in opts.items(): print(f'  {k} -> {v}')\nelse:\n    print('failed to fetch fields:', d)\"".to_string(),
+            description:
+                "shell command can read, write, spawn processes, or access network".to_string(),
+            risk_level: "dangerous".to_string(),
+            scope: "shell".to_string(),
+            cwd: "/tmp/example/project".to_string(),
+            details: vec![
+                "shell command can read, write, spawn processes, or access network".to_string(),
+            ],
+        };
+
+        let width = 82;
+        let lines = permission_lines(&req, 0, width, 20);
+        let rendered = lines.join("\n");
+
+        assert!(rendered.contains("Do you want to proceed?"));
+        assert!(rendered.contains("❯ 1. Yes"));
+        assert!(rendered.contains("Always allow this command"));
+        assert!(rendered.contains("lines hidden"));
+        assert!(lines.iter().all(|line| !line.contains('\n')));
+        assert!(lines.iter().all(|line| display_width(line) <= width));
+    }
+
+    #[test]
+    fn elapsed_time_uses_minutes_after_sixty_seconds() {
+        assert_eq!(format_elapsed(59), "59s");
+        assert_eq!(format_elapsed(60), "1m 0s");
+        assert_eq!(format_elapsed(226), "3m 46s");
+    }
 }

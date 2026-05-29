@@ -476,7 +476,9 @@ async fn test_tool_registry_exec_run_rejects_external_cwd() {
         .await
         .unwrap_err();
 
-    assert!(err.to_string().contains("cwd is outside the working directory"));
+    assert!(err
+        .to_string()
+        .contains("cwd is outside the working directory"));
 }
 
 #[tokio::test]
@@ -663,4 +665,3 @@ fn test_command_parser_available_commands() {
     assert!(commands.contains(&"skills".to_string()));
     assert!(commands.contains(&"help".to_string()));
 }
-

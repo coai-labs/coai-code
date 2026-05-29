@@ -236,18 +236,27 @@ impl ToolCallLoop {
                     }
 
                     on_event(LoopEvent::Error(
-                        "Output repeatedly hit the max token limit; auto-continuation stopped".into(),
+                        "Output repeatedly hit the max token limit; auto-continuation stopped"
+                            .into(),
                     ));
                     return Err((
                         crate::core::CoAIError::Other(
-                            "Output repeatedly hit the max token limit; auto-continuation stopped".into(),
+                            "Output repeatedly hit the max token limit; auto-continuation stopped"
+                                .into(),
                         ),
                         messages,
                     ));
                 }
                 crate::llm::client::FinishReason::ContentFilter => {
-                    on_event(LoopEvent::Error("Content was filtered by the provider".into()));
-                    return Err((crate::core::CoAIError::Other("Content was filtered by the provider".into()), messages));
+                    on_event(LoopEvent::Error(
+                        "Content was filtered by the provider".into(),
+                    ));
+                    return Err((
+                        crate::core::CoAIError::Other(
+                            "Content was filtered by the provider".into(),
+                        ),
+                        messages,
+                    ));
                 }
             }
         }
@@ -758,100 +767,6 @@ fn extract_quoted_target(text: &str) -> Option<&str> {
     None
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn asks_before_investigating_scope_confirmation_tasks() {
-        let prompt = tool_loop_system_prompt(1_000_000);
-        let messages = vec![
-            Message::system(&prompt),
-            Message::user("confirm the goal and scope of the \"ok\" task"),
-        ];
-
-        let question = clarification_question(&messages).expect("should ask for clarification");
-        assert!(question.contains("ok"));
-        assert!(question.contains("needs to be done"));
-        assert!(question.contains("acceptance criteria"));
-    }
-
-    #[test]
-    fn asks_before_investigating_short_ambiguous_tasks() {
-        let messages = vec![Message::user("ok")];
-
-        let question = clarification_question(&messages).expect("should ask for clarification");
-        assert!(question.contains("goal and scope"));
-    }
-
-    #[test]
-    fn allows_explicit_investigation() {
-        let messages = vec![Message::user(
-            "confirm the goal and scope of the \"ok\" task, investigate yourself first",
-        )];
-
-        assert!(clarification_question(&messages).is_none());
-    }
-
-    #[test]
-    fn does_not_block_clear_tasks() {
-        let messages = vec![Message::user("update the help text in src/main.rs")];
-
-        assert!(clarification_question(&messages).is_none());
-    }
-
-    #[test]
-    fn does_not_treat_ok_reply_as_new_ambiguous_task() {
-        let messages = vec![
-            Message::user("Should I continue?"),
-            Message::assistant("Can I proceed?"),
-            Message::user("ok"),
-        ];
-
-        assert!(clarification_question(&messages).is_none());
-    }
-
-    #[test]
-    fn compacts_exec_output_for_model_context() {
-        let raw = serde_json::json!({
-            "stdout": "a".repeat(30_000),
-            "stderr": "b".repeat(12_000),
-            "exit_code": 1,
-            "success": false
-        })
-        .to_string();
-
-        let compacted = compact_tool_output_for_model("exec_run", &raw);
-
-        assert!(compacted.contains("exit_code: 1"));
-        assert!(compacted.contains("stdout"));
-        assert!(compacted.contains("stderr"));
-        assert!(compacted.contains("output truncated"));
-        assert!(compacted.chars().count() < raw.chars().count());
-    }
-
-    #[test]
-    fn keeps_file_read_more_generous_than_generic_tools() {
-        let raw = "x".repeat(80_000);
-
-        let compacted = compact_tool_output_for_model("file_read", &raw);
-
-        assert_eq!(compacted, raw);
-    }
-
-    #[test]
-    fn browser_tool_requires_confirmation_with_url_target() {
-        let args = serde_json::json!({ "url": "https://example.com" });
-
-        assert!(needs_confirmation("net.browser"));
-        assert!(needs_confirmation("net_browser"));
-        assert_eq!(
-            confirmation_target("net.browser", &args),
-            Some("https://example.com")
-        );
-    }
-}
-
 /// Build a human-readable detail string from tool name and arguments
 /// A human-readable preview of a file mutation for the permission prompt:
 /// the content for writes, and old→new for edits. Returns None for non-file tools.
@@ -1127,4 +1042,98 @@ fn confirmation_target<'a>(tool_name: &str, args: &'a serde_json::Value) -> Opti
         .or_else(|| args.get("filename").and_then(|v| v.as_str()))
         .or_else(|| args.get("file_path").and_then(|v| v.as_str()))
         .or_else(|| args.get("file").and_then(|v| v.as_str()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn asks_before_investigating_scope_confirmation_tasks() {
+        let prompt = tool_loop_system_prompt(1_000_000);
+        let messages = vec![
+            Message::system(&prompt),
+            Message::user("confirm the goal and scope of the \"ok\" task"),
+        ];
+
+        let question = clarification_question(&messages).expect("should ask for clarification");
+        assert!(question.contains("ok"));
+        assert!(question.contains("needs to be done"));
+        assert!(question.contains("acceptance criteria"));
+    }
+
+    #[test]
+    fn asks_before_investigating_short_ambiguous_tasks() {
+        let messages = vec![Message::user("ok")];
+
+        let question = clarification_question(&messages).expect("should ask for clarification");
+        assert!(question.contains("goal and scope"));
+    }
+
+    #[test]
+    fn allows_explicit_investigation() {
+        let messages = vec![Message::user(
+            "confirm the goal and scope of the \"ok\" task, investigate yourself first",
+        )];
+
+        assert!(clarification_question(&messages).is_none());
+    }
+
+    #[test]
+    fn does_not_block_clear_tasks() {
+        let messages = vec![Message::user("update the help text in src/main.rs")];
+
+        assert!(clarification_question(&messages).is_none());
+    }
+
+    #[test]
+    fn does_not_treat_ok_reply_as_new_ambiguous_task() {
+        let messages = vec![
+            Message::user("Should I continue?"),
+            Message::assistant("Can I proceed?"),
+            Message::user("ok"),
+        ];
+
+        assert!(clarification_question(&messages).is_none());
+    }
+
+    #[test]
+    fn compacts_exec_output_for_model_context() {
+        let raw = serde_json::json!({
+            "stdout": "a".repeat(30_000),
+            "stderr": "b".repeat(12_000),
+            "exit_code": 1,
+            "success": false
+        })
+        .to_string();
+
+        let compacted = compact_tool_output_for_model("exec_run", &raw);
+
+        assert!(compacted.contains("exit_code: 1"));
+        assert!(compacted.contains("stdout"));
+        assert!(compacted.contains("stderr"));
+        assert!(compacted.contains("output truncated"));
+        assert!(compacted.chars().count() < raw.chars().count());
+    }
+
+    #[test]
+    fn keeps_file_read_more_generous_than_generic_tools() {
+        let raw = "x".repeat(80_000);
+
+        let compacted = compact_tool_output_for_model("file_read", &raw);
+
+        assert_eq!(compacted, raw);
+    }
+
+    #[test]
+    fn browser_tool_requires_confirmation_with_url_target() {
+        let args = serde_json::json!({ "url": "https://example.com" });
+
+        assert!(needs_confirmation("net.browser"));
+        assert!(needs_confirmation("net_browser"));
+        assert_eq!(
+            confirmation_target("net.browser", &args),
+            Some("https://example.com")
+        );
+    }
 }

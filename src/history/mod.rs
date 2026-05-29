@@ -1,6 +1,7 @@
 use crate::core::{CoAIError, Result, TaskRecord, ToolCall};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -47,19 +48,10 @@ pub enum AtomicStepStatus {
     Failed,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 struct HistoryStorage {
     tasks: HashMap<Uuid, TaskRecord>,
     atomic_tasks: HashMap<Uuid, AtomicTask>,
-}
-
-impl Default for HistoryStorage {
-    fn default() -> Self {
-        Self {
-            tasks: HashMap::new(),
-            atomic_tasks: HashMap::new(),
-        }
-    }
 }
 
 pub struct HistoryStore {
@@ -139,13 +131,13 @@ impl HistoryStore {
             })
             .collect();
 
-        records.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        records.sort_by_key(|b| Reverse(b.created_at));
         records
     }
 
     pub fn list(&self, limit: Option<usize>) -> Vec<&TaskRecord> {
         let mut records: Vec<_> = self.tasks.values().collect();
-        records.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        records.sort_by_key(|b| Reverse(b.created_at));
 
         if let Some(limit) = limit {
             records.truncate(limit);

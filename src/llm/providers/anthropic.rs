@@ -90,14 +90,14 @@ impl AnthropicClient {
                     // Merge consecutive tool_result messages into single user message
                     // (Anthropic requires all tool_results for one assistant turn in one user message)
                     while let Some(next) = msgs.peek() {
-                        if next.tool_call_id.is_some() {
+                        if let Some(tool_use_id) = next.tool_call_id.as_ref() {
                             let next_text = match &next.content {
                                 Content::Text(t) => t.clone(),
                                 _ => String::new(),
                             };
                             content_blocks.push(serde_json::json!({
                                 "type": "tool_result",
-                                "tool_use_id": next.tool_call_id.as_ref().unwrap(),
+                                "tool_use_id": tool_use_id,
                                 "content": next_text
                             }));
                             msgs.next(); // consume
@@ -296,7 +296,9 @@ impl AnthropicClient {
                     .and_then(|_| std::env::var("DEEPSEEK_API_KEY").ok())
             })
             .or_else(|| std::env::var("ANTHROPIC_API_KEY").ok())
-            .ok_or_else(|| CoAIError::Other("DEEPSEEK_API_KEY or ANTHROPIC_API_KEY is not configured".into()))
+            .ok_or_else(|| {
+                CoAIError::Other("DEEPSEEK_API_KEY or ANTHROPIC_API_KEY is not configured".into())
+            })
     }
     fn get_base_url(&self) -> String {
         let base = self
@@ -375,9 +377,7 @@ impl LLMClient for AnthropicClient {
                     let mut events = Vec::new();
 
                     for line in text.lines() {
-                        if line.starts_with("data: ") {
-                            let data = &line[6..];
-
+                        if let Some(data) = line.strip_prefix("data: ") {
                             if let Ok(json) = serde_json::from_str::<serde_json::Value>(data) {
                                 match json["type"].as_str() {
                                     Some("message_start") => {
@@ -385,22 +385,15 @@ impl LLMClient for AnthropicClient {
                                     }
                                     Some("content_block_start") => {
                                         if let Some(block) = json["content_block"].as_object() {
-                                            match block["type"].as_str() {
-                                                Some("tool_use") => {
-                                                    let id = block["id"]
-                                                        .as_str()
-                                                        .unwrap_or("")
-                                                        .to_string();
-                                                    let name = block["name"]
-                                                        .as_str()
-                                                        .unwrap_or("")
-                                                        .to_string();
-                                                    events.push(StreamEvent::ToolCallStart {
-                                                        id,
-                                                        name,
-                                                    });
-                                                }
-                                                _ => {} // thinking, text blocks — handled via deltas
+                                            if let Some("tool_use") = block["type"].as_str() {
+                                                let id =
+                                                    block["id"].as_str().unwrap_or("").to_string();
+                                                let name = block["name"]
+                                                    .as_str()
+                                                    .unwrap_or("")
+                                                    .to_string();
+                                                events
+                                                    .push(StreamEvent::ToolCallStart { id, name });
                                             }
                                         }
                                     }

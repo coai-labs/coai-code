@@ -254,8 +254,7 @@ impl LLMClient for OpenAIClient {
                         let mut events = Vec::new();
 
                         for line in text.lines() {
-                            if line.starts_with("data: ") {
-                                let data = &line[6..];
+                            if let Some(data) = line.strip_prefix("data: ") {
                                 if data == "[DONE]" {
                                     events.push(StreamEvent::Done);
                                     continue;

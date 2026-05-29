@@ -215,9 +215,10 @@ pub struct FunctionCall {
     pub arguments: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ToolChoice {
+    #[default]
     Auto,
     None,
     Required,
@@ -225,12 +226,6 @@ pub enum ToolChoice {
     Specific {
         name: String,
     },
-}
-
-impl Default for ToolChoice {
-    fn default() -> Self {
-        ToolChoice::Auto
-    }
 }
 
 impl Message {

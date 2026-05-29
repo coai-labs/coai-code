@@ -1,0 +1,89 @@
+# CoAI Code - terminal AI coding agent optimized for DeepSeek
+
+[package]
+name = "coai-code"
+version = "0.1.0"
+edition = "2021"
+authors = ["CoAI Team <chonebz@gmail.com>"]
+description = "A terminal AI coding agent optimized for DeepSeek, also supporting OpenAI, Anthropic, and Ollama."
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/coai-labs/coai-code"
+homepage = "https://github.com/coai-labs/coai-code"
+documentation = "https://docs.rs/coai-code"
+keywords = ["coding-agent", "llm", "deepseek", "agent", "tui"]
+categories = ["command-line-utilities", "development-tools"]
+
+# 主二进制入口点 - `coai` 命令
+[[bin]]
+name = "coai"
+path = "src/main.rs"
+doc = false  # 不在文档中显示
+
+# 库入口点 - 供其他项目集成使用
+[lib]
+name = "coai_code"
+path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
+
+# 依赖项配置
+[dependencies]
+# TUI框架 - 终端用户界面 (纯 crossterm)
+crossterm = { version = "0.27", features = ["event-stream"] }
+
+# 异步运行时
+tokio = { version = "1.38", features = ["full"] }
+
+# 序列化/反序列化
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# 命令解析 - /xx 命令系统
+clap = { version = "4.5", features = ["derive", "env"] }
+
+# 配置管理
+config = "0.14"
+toml = "0.8"
+
+# 日志系统
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# 任务调度和管理
+async-task = "4.6"
+dashmap = "5.5"
+
+# 错误处理
+anyhow = "1.0"
+thiserror = "1.0"
+
+# HTTP客户端 - LLM API调用
+reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls-webpki-roots"], default-features = false }
+
+# 异步trait
+async-trait = "0.1"
+
+# 流式处理
+futures = "0.3"
+tokio-stream = "0.1"
+
+# 实用工具
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.7", features = ["serde", "v4"] }
+once_cell = "1.19"
+dirs = "5.0"
+
+# 可选依赖 - 根据功能启用
+[features]
+default = ["full"]
+full = [
+    "tokio/full",
+    "clap/derive",
+    "serde/derive",
+]
+
+# 开发依赖
+[dev-dependencies]
+tempfile = "3.10"
+criterion = "0.5"
+tokio-test = "0.4"

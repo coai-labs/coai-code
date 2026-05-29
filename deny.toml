@@ -1,0 +1,68 @@
+# cargo-deny configuration
+# Run: cargo deny check
+# Docs: https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+# Only check dependencies for the host platform by default
+targets = []
+
+# ---------------------------------------------------------------------------
+# License policy
+# ---------------------------------------------------------------------------
+[licenses]
+# Minimum confidence threshold for license detection
+confidence-threshold = 0.8
+
+# Permitted SPDX license identifiers.
+# This project is dual-licensed MIT OR Apache-2.0; all dependencies must be
+# compatible with at least one of these terms.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "ISC",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "CC0-1.0",
+    "Zlib",
+    "OpenSSL",
+    # MPL-2.0 is file-level copyleft; compatible when used as a crate dependency.
+    # Current instance: option-ext 0.2.0 (pulled in by dirs-sys).
+    "MPL-2.0",
+    # r-efi offers MIT OR Apache-2.0 OR LGPL-2.1-or-later; we exercise MIT/Apache-2.0.
+    "LGPL-2.1-or-later",
+]
+
+# Exceptions for specific crates where the detected license needs clarification.
+exceptions = [
+    # r-efi: triply-licensed; MIT and Apache-2.0 terms are available.
+    { allow = ["MIT", "Apache-2.0", "LGPL-2.1-or-later"], name = "r-efi" },
+]
+
+# ---------------------------------------------------------------------------
+# Duplicate / version policy
+# ---------------------------------------------------------------------------
+[bans]
+# Warn (not error) on duplicate crate versions — Rust ecosystem commonly has these.
+multiple-versions = "warn"
+
+# ---------------------------------------------------------------------------
+# Vulnerability advisory database
+# ---------------------------------------------------------------------------
+[advisories]
+# Use the RustSec advisory database.
+# cargo-deny fetches https://github.com/RustSec/advisory-db automatically.
+db-urls = ["https://github.com/rustsec/advisory-db"]
+version = 2
+
+# ---------------------------------------------------------------------------
+# Source policy
+# ---------------------------------------------------------------------------
+[sources]
+# Only allow crates from crates.io and git sources (no unpublished local paths
+# in release builds).
+unknown-registry = "warn"
+unknown-git = "warn"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
